@@ -9,7 +9,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-20 border-b border-border bg-background/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link
-            href="/portal"
+            href="/"
             className="flex items-center gap-2 font-semibold tracking-tight"
           >
             <Image
@@ -25,28 +25,25 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
-            <NavLink href="/portal/profil">Profil</NavLink>
-            <NavLink href="/portal/berita">Berita</NavLink>
-            <NavLink href="/portal/agenda">Agenda</NavLink>
-            <NavLink href="/portal/dojo">Dojo</NavLink>
-            <NavLink href="/portal/dokumen">Dokumen</NavLink>
+            <NavLink href="/profil">Profil</NavLink>
+            <NavLink href="/berita">Berita</NavLink>
+            <NavLink href="/agenda">Agenda</NavLink>
+            <NavLink href="/dojo">Dojo</NavLink>
+            <NavLink href="/dokumen">Dokumen</NavLink>
           </nav>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="btn-outline px-4 py-1.5"
-            >
+            <button type="button" className="btn-outline px-4 py-1.5">
               Login
             </button>
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-4 pb-3 md:hidden">
           <div className="flex flex-wrap gap-2">
-            <NavLink href="/portal/profil">Profil</NavLink>
-            <NavLink href="/portal/berita">Berita</NavLink>
-            <NavLink href="/portal/agenda">Agenda</NavLink>
-            <NavLink href="/portal/dojo">Dojo</NavLink>
-            <NavLink href="/portal/dokumen">Dokumen</NavLink>
+            <NavLink href="/profil">Profil</NavLink>
+            <NavLink href="/berita">Berita</NavLink>
+            <NavLink href="/agenda">Agenda</NavLink>
+            <NavLink href="/dojo">Dojo</NavLink>
+            <NavLink href="/dokumen">Dokumen</NavLink>
           </div>
         </div>
       </header>
@@ -88,27 +85,27 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
             <div className="font-semibold">Menu</div>
             <ul className="mt-2 space-y-1 text-muted-foreground">
               <li>
-                <Link className="hover:text-foreground" href="/portal/profil">
+                <Link className="hover:text-foreground" href="/profil">
                   Profil
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/portal/berita">
+                <Link className="hover:text-foreground" href="/berita">
                   Berita
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/portal/agenda">
+                <Link className="hover:text-foreground" href="/agenda">
                   Agenda
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/portal/dojo">
+                <Link className="hover:text-foreground" href="/dojo">
                   Dojo
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/portal/dokumen">
+                <Link className="hover:text-foreground" href="/dokumen">
                   Dokumen
                 </Link>
               </li>
@@ -122,4 +119,3 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
