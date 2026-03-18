@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  /* Core surfaces */
+  --background: #fbfbfc;
+  --foreground: #111114;
+
+  --card: #ffffff;
+  --muted: #f3f4f6;
+  --muted-foreground: #52525b;
+  --border: #e4e4e7;
+
+  /* Brand */
+  --accent: #b91c1c;
+  --accent-foreground: #ffffff;
+
+  /* Effects */
+  --ring: color-mix(in oklab, var(--accent) 35%, white);
+  --shadow: 0 1px 1px rgba(0, 0, 0, 0.04), 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b0b0f;
+    --foreground: #f4f4f5;
+
+    --card: #101018;
+    --muted: #141420;
+    --muted-foreground: #a1a1aa;
+    --border: #27272a;
+
+    --accent: #ef4444;
+    --accent-foreground: #0b0b0f;
+
+    --ring: color-mix(in oklab, var(--accent) 45%, black);
+    --shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 18px 42px rgba(0, 0, 0, 0.5);
+  }
+}
+
+body {
+  background: radial-gradient(
+      1200px 700px at 30% -10%,
+      color-mix(in oklab, var(--accent) 12%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 500px at 90% 0%,
+      color-mix(in oklab, var(--foreground) 6%, transparent),
+      transparent 60%
+    ),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans",
+    sans-serif;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .surface {
+    @apply rounded-3xl border border-border bg-card;
+    box-shadow: var(--shadow);
+  }
+
+  .surface-muted {
+    @apply rounded-3xl border border-border bg-muted;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition;
+  }
+
+  .btn-primary:hover {
+    background: color-mix(in oklab, var(--accent) 92%, black);
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted;
+  }
+}
