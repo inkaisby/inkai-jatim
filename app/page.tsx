@@ -18,12 +18,6 @@ export default function HomePage() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link
               className="btn-primary"
-              href="/portal"
-            >
-              Buka Portal
-            </Link>
-            <Link
-              className="btn-outline"
               href="/portal/berita"
             >
               Lihat Berita
