@@ -54,7 +54,15 @@ export function PortalShell({
           </div>
         </div>
 
-        {/* Removed mobile navigation subheader as requested */}
+        <div className="mx-auto max-w-6xl px-4 pb-3 md:hidden">
+          <div className="flex flex-wrap gap-2">
+            {navItems.map((item) => (
+              <NavLinkComponent key={item.href} href={item.href}>
+                {item.label}
+              </NavLinkComponent>
+            ))}
+          </div>
+        </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-8">{children}</div>

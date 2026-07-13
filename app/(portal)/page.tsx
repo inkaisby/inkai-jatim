@@ -29,7 +29,7 @@ export default function PortalHomePage() {
               login dibahas kemudian.
             </p>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 hidden flex-col gap-3 sm:flex sm:flex-row">
               <Link className="btn-primary" href="/profil">
                 Profil INKAI
               </Link>
