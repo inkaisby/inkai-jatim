@@ -2,9 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { X, Mail, Lock, User, Eye, EyeOff, MapPin, ChevronDown, ArrowRight } from "lucide-react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getJatimBranches, type BranchOption } from "@/lib/portal/branches";
+import {
+  X,
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  MapPin,
+  ChevronDown,
+  ArrowRight,
+  Building2,
+} from "lucide-react";
+import {
+  fetchDojosByBranch,
+  fetchJatimBranches,
+  type BranchOption,
+  type DojoOption,
+} from "@/lib/portal/branches";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -22,10 +37,14 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     password: "",
     confirmPassword: "",
     branchId: "",
+    dojoId: "",
   });
   const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [dojos, setDojos] = useState<DojoOption[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
+  const [dojosLoading, setDojosLoading] = useState(false);
   const [branchesError, setBranchesError] = useState<string | null>(null);
+  const [dojosError, setDojosError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -53,7 +72,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setBranchesLoading(true);
       setBranchesError(null);
 
-      const result = await getJatimBranches();
+      const result = await fetchJatimBranches();
 
       if (cancelled) return;
 
@@ -74,32 +93,52 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     };
   }, [isOpen, activeTab]);
 
+  useEffect(() => {
+    if (!formData.branchId) {
+      setDojos([]);
+      setDojosError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDojos() {
+      setDojosLoading(true);
+      setDojosError(null);
+
+      const result = await fetchDojosByBranch(formData.branchId);
+
+      if (cancelled) return;
+
+      if (!result.ok) {
+        setDojos([]);
+        setDojosError(result.error);
+      } else {
+        setDojos(result.data);
+      }
+
+      setDojosLoading(false);
+    }
+
+    void loadDojos();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.branchId]);
+
   if (!isOpen) return null;
-
-  const getAuthErrorMessage = (error: { message: string }) => {
-    const msg = error.message.toLowerCase();
-
-    if (msg.includes("invalid login credentials")) {
-      return "Email atau password salah.";
-    }
-    if (msg.includes("email not confirmed")) {
-      return "Email belum diverifikasi. Cek inbox Anda.";
-    }
-    if (msg.includes("user already registered")) {
-      return "Email sudah terdaftar. Silakan login.";
-    }
-    if (msg.includes("password")) {
-      return "Password minimal 6 karakter.";
-    }
-
-    return error.message;
-  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      if (name === "branchId") {
+        return { ...prev, branchId: value, dojoId: "" };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,140 +146,134 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setIsLoading(true);
     setMessage(null);
 
-    const supabase = createSupabaseBrowserClient();
-    if (!supabase) {
-      setMessage({
-        type: "error",
-        text: "Supabase belum dikonfigurasi. Set NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-      });
-      setIsLoading(false);
-      return;
-    }
+    try {
+      if (activeTab === "login") {
+        if (!formData.email || !formData.password) {
+          setMessage({ type: "error", text: "Silakan isi semua field." });
+          return;
+        }
 
-    if (activeTab === "login") {
-      if (!formData.email || !formData.password) {
-        setMessage({ type: "error", text: "Silakan isi semua field." });
-        setIsLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email.trim(),
-        password: formData.password,
-      });
-
-      if (error) {
-        setMessage({ type: "error", text: getAuthErrorMessage(error) });
-        setIsLoading(false);
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("portal_member_profiles")
-        .select("status, full_name")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      if (profile?.status === "pending") {
-        setMessage({
-          type: "success",
-          text: "Login berhasil. Akun Anda menunggu verifikasi admin.",
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email.trim(),
+            password: formData.password,
+          }),
         });
-      } else if (profile?.status === "rejected") {
-        setMessage({
-          type: "error",
-          text: "Akun ditolak. Hubungi pengurus INKAI Jatim.",
-        });
-        await supabase.auth.signOut();
-        setIsLoading(false);
-        return;
+
+        const json = (await response.json()) as {
+          ok?: boolean;
+          message?: string;
+          error?: string;
+          user?: { profileStatus?: string | null; fullName?: string | null };
+        };
+
+        if (!response.ok) {
+          setMessage({ type: "error", text: json.error ?? "Login gagal." });
+          return;
+        }
+
+        if (json.user?.profileStatus === "pending") {
+          setMessage({
+            type: "success",
+            text: "Login berhasil. Akun Anda menunggu verifikasi admin.",
+          });
+        } else if (json.user?.profileStatus === "rejected") {
+          setMessage({
+            type: "error",
+            text: "Akun ditolak. Hubungi pengurus INKAI Jatim.",
+          });
+          await fetch("/api/auth/logout", { method: "POST" });
+          return;
+        } else {
+          setMessage({
+            type: "success",
+            text: json.message ?? "Login berhasil!",
+          });
+        }
+
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 1200);
       } else {
+        if (
+          !formData.name ||
+          !formData.branchId ||
+          !formData.dojoId ||
+          !formData.email ||
+          !formData.password ||
+          !formData.confirmPassword
+        ) {
+          setMessage({ type: "error", text: "Silakan isi semua field wajib." });
+          return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setMessage({ type: "error", text: "Konfirmasi password tidak cocok." });
+          return;
+        }
+        if (formData.password.length < 6) {
+          setMessage({ type: "error", text: "Password minimal 6 karakter." });
+          return;
+        }
+
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            password: formData.password,
+            branchId: formData.branchId,
+            dojoId: formData.dojoId,
+          }),
+        });
+
+        const json = (await response.json()) as { ok?: boolean; message?: string; error?: string };
+
+        if (!response.ok) {
+          setMessage({ type: "error", text: json.error ?? "Pendaftaran gagal." });
+          return;
+        }
+
         setMessage({
           type: "success",
-          text: `Selamat datang${profile?.full_name ? `, ${profile.full_name}` : ""}!`,
+          text: json.message ?? "Pendaftaran berhasil! Silakan login.",
         });
-      }
 
-      setTimeout(() => {
-        onClose();
-        window.location.reload();
-      }, 1200);
-    } else {
-      if (
-        !formData.name ||
-        !formData.branchId ||
-        !formData.email ||
-        !formData.password ||
-        !formData.confirmPassword
-      ) {
-        setMessage({ type: "error", text: "Silakan isi semua field wajib." });
-        setIsLoading(false);
-        return;
+        setTimeout(() => {
+          setActiveTab("login");
+          setMessage(null);
+          setFormData({
+            name: "",
+            email: formData.email.trim(),
+            password: "",
+            confirmPassword: "",
+            branchId: "",
+            dojoId: "",
+          });
+        }, 2500);
       }
-      if (formData.password !== formData.confirmPassword) {
-        setMessage({ type: "error", text: "Konfirmasi password tidak cocok." });
-        setIsLoading(false);
-        return;
-      }
-      if (formData.password.length < 6) {
-        setMessage({ type: "error", text: "Password minimal 6 karakter." });
-        setIsLoading(false);
-        return;
-      }
-
-      const selectedBranch = branches.find((branch) => branch.id === formData.branchId);
-
-      const { error } = await supabase.auth.signUp({
-        email: formData.email.trim(),
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.name.trim(),
-            branch_id: formData.branchId,
-            branch_name: selectedBranch?.name ?? null,
-          },
-        },
-      });
-
-      if (error) {
-        setMessage({ type: "error", text: getAuthErrorMessage(error) });
-        setIsLoading(false);
-        return;
-      }
-
-      setMessage({
-        type: "success",
-        text: "Pendaftaran berhasil! Cek email untuk verifikasi, lalu login.",
-      });
-      setTimeout(() => {
-        setActiveTab("login");
-        setMessage(null);
-        setFormData({
-          name: "",
-          email: formData.email.trim(),
-          password: "",
-          confirmPassword: "",
-          branchId: "",
-        });
-      }, 2500);
+    } catch {
+      setMessage({ type: "error", text: "Terjadi kesalahan. Coba lagi." });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-md bg-background border border-border rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center p-6 sm:p-8"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Background glow effects */}
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-full border border-border/50 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 cursor-pointer active:scale-95"
@@ -249,7 +282,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           <X className="h-4.5 w-4.5" />
         </button>
 
-        {/* INKAI Logo */}
         <div className="relative mb-4 flex flex-col items-center">
           <div className="relative">
             <div className="absolute -inset-1.5 rounded-full bg-accent/20 blur opacity-75 animate-pulse" />
@@ -270,7 +302,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </p>
         </div>
 
-        {/* Tabs */}
         <div className="w-full flex rounded-full bg-muted/60 p-1 border border-border/60 mb-6">
           <button
             type="button"
@@ -302,7 +333,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </button>
         </div>
 
-        {/* Feedback message */}
         {message && (
           <div
             className={`w-full p-3.5 mb-4 rounded-xl border text-xs leading-relaxed ${
@@ -315,11 +345,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </div>
         )}
 
-        {/* Forms */}
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           {activeTab === "register" && (
             <>
-              {/* Full Name */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">Nama Lengkap</label>
                 <div className="relative">
@@ -338,7 +366,21 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 </div>
               </div>
 
-              {/* Branch */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground">Provinsi</label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-muted-foreground">
+                    <Building2 className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value="Jawa Timur"
+                    readOnly
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border/80 bg-muted/40 text-sm text-muted-foreground"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">Cabang</label>
                 <div className="relative">
@@ -375,10 +417,46 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   <p className="text-[11px] text-destructive">{branchesError}</p>
                 )}
               </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground">Dojo / Ranting</label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                  </span>
+                  <select
+                    name="dojoId"
+                    value={formData.dojoId}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!formData.branchId || dojosLoading || !!dojosError}
+                    className="w-full appearance-none pl-10 pr-10 py-2.5 rounded-xl border border-border/80 bg-background/50 text-sm focus:outline-hidden focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all disabled:opacity-60"
+                  >
+                    <option value="">
+                      {!formData.branchId
+                        ? "Pilih cabang terlebih dahulu"
+                        : dojosLoading
+                          ? "Memuat dojo/ranting..."
+                          : dojosError
+                            ? "Gagal memuat dojo"
+                            : "Pilih dojo/ranting"}
+                    </option>
+                    {dojos.map((dojo) => (
+                      <option key={dojo.id} value={dojo.id}>
+                        {dojo.name}
+                        {dojo.address ? ` — ${dojo.address}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                    <ChevronDown className="h-4 w-4" />
+                  </span>
+                </div>
+                {dojosError && <p className="text-[11px] text-destructive">{dojosError}</p>}
+              </div>
             </>
           )}
 
-          {/* Email */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Email</label>
             <div className="relative">
@@ -397,7 +475,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </div>
           </div>
 
-          {/* Password */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Password</label>
             <div className="relative">
@@ -423,7 +500,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </div>
           </div>
 
-          {/* Confirm Password (Register Only) */}
           {activeTab === "register" && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Konfirmasi Password</label>
@@ -451,7 +527,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </div>
           )}
 
-          {/* Action button */}
           <button
             type="submit"
             disabled={isLoading}
@@ -473,7 +548,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </button>
         </form>
 
-        {/* Footer Links */}
         <div className="mt-6 text-center text-xs text-muted-foreground">
           {activeTab === "login" ? (
             <p>

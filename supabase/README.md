@@ -17,20 +17,31 @@ Copy-paste isi file migration ke SQL Editor di Supabase, lalu jalankan.
 Buat `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server auth/register)
+- `PORTAL_SESSION_SECRET` (JWT session cookie, min 32 karakter)
 
-## Auth / Login Member (Tahap 2)
-Migration auth ada di:
-- `supabase/migrations/20260713_000002_portal_auth_members.sql`
+## Auth / Login Member (Tahap 2+)
+Portal login terintegrasi dengan tabel operasional:
+- `User` + `_UserRoles` + `Role` (RBAC)
+- `Member` (anggota per dojo)
+- `portal_member_profiles` (status verifikasi portal)
 
-Tabel `portal_member_profiles` menyimpan profil anggota (nama, cabang, status verifikasi).
-Dropdown pendaftaran mengambil data dari tabel `Branch` (filter provinsi Jawa Timur).
-Trigger `on_auth_user_created_portal_member` otomatis membuat profil saat user mendaftar via Supabase Auth.
+Migration:
+- `supabase/migrations/20260713_000002_portal_auth_members.sql` (legacy auth.users — digantikan)
+- `supabase/migrations/20260713_000003_portal_member_branch.sql` (legacy)
+- `supabase/migrations/20260713_000004_portal_user_member_integration.sql` (**aktif**)
 
-Migration cabang:
-- `supabase/migrations/20260713_000003_portal_member_branch.sql`
+API routes:
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `GET /api/org/branches`
+- `GET /api/org/dojos?branchId=...`
+
+Dropdown pendaftaran: Provinsi (Jatim) → Cabang → Dojo/Ranting dari tabel `Branch` + `Dojo`.
 
 Di Supabase Dashboard, pastikan:
-- **Authentication > Providers > Email** aktif
-- **Site URL** diset ke `https://inkai-jatim.vercel.app` (dan `http://localhost:3000` untuk dev)
-- Jalankan migration Tahap 2 setelah migration Tahap 1
+- **Authentication > Providers > Email** aktif (opsional, portal pakai tabel `User`)
+- Jalankan migration `20260713_000004_portal_user_member_integration.sql`
 

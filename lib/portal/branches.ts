@@ -1,49 +1,54 @@
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-
 export type BranchOption = {
   id: string;
   name: string;
   city: string | null;
 };
 
-const JATIM_PROVINCE_NAME = "JAWA TIMUR";
+export type DojoOption = {
+  id: string;
+  name: string;
+  address: string | null;
+  branchId: string;
+};
 
-export async function getJatimBranches(): Promise<{
+export async function fetchJatimBranches(): Promise<{
   ok: true;
   data: BranchOption[];
 } | {
   ok: false;
   error: string;
 }> {
-  const supabase = createSupabaseBrowserClient();
-  if (!supabase) {
-    return { ok: false, error: "Supabase belum dikonfigurasi." };
+  try {
+    const response = await fetch("/api/org/branches");
+    const json = (await response.json()) as { data?: BranchOption[]; error?: string };
+
+    if (!response.ok) {
+      return { ok: false, error: json.error ?? "Gagal memuat cabang." };
+    }
+
+    return { ok: true, data: json.data ?? [] };
+  } catch {
+    return { ok: false, error: "Gagal memuat cabang." };
   }
+}
 
-  const { data: province, error: provinceError } = await supabase
-    .from("Province")
-    .select("id")
-    .eq("name", JATIM_PROVINCE_NAME)
-    .maybeSingle();
+export async function fetchDojosByBranch(branchId: string): Promise<{
+  ok: true;
+  data: DojoOption[];
+} | {
+  ok: false;
+  error: string;
+}> {
+  try {
+    const response = await fetch(`/api/org/dojos?branchId=${encodeURIComponent(branchId)}`);
+    const json = (await response.json()) as { data?: DojoOption[]; error?: string };
 
-  if (provinceError) {
-    return { ok: false, error: provinceError.message };
+    if (!response.ok) {
+      return { ok: false, error: json.error ?? "Gagal memuat dojo." };
+    }
+
+    return { ok: true, data: json.data ?? [] };
+  } catch {
+    return { ok: false, error: "Gagal memuat dojo." };
   }
-
-  if (!province) {
-    return { ok: false, error: "Provinsi Jawa Timur tidak ditemukan." };
-  }
-
-  const { data, error } = await supabase
-    .from("Branch")
-    .select("id, name, city")
-    .eq("provinceId", province.id)
-    .eq("isDeleted", false)
-    .order("name");
-
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-
-  return { ok: true, data: data ?? [] };
 }
