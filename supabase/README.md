@@ -18,3 +18,15 @@ Buat `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
+## Auth / Login Member (Tahap 2)
+Migration auth ada di:
+- `supabase/migrations/20260713_000002_portal_auth_members.sql`
+
+Tabel `portal_member_profiles` menyimpan profil anggota (nama, no. anggota/dojo, status verifikasi).
+Trigger `on_auth_user_created_portal_member` otomatis membuat profil saat user mendaftar via Supabase Auth.
+
+Di Supabase Dashboard, pastikan:
+- **Authentication > Providers > Email** aktif
+- **Site URL** diset ke `https://inkai-jatim.vercel.app` (dan `http://localhost:3000` untuk dev)
+- Jalankan migration Tahap 2 setelah migration Tahap 1
+

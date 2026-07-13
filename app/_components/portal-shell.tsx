@@ -6,7 +6,8 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import type { ComponentType } from "react";
 import { ThemeToggle } from "./theme-toggle";
-import { Award, Shield, MapPin, Globe, Compass, ArrowUpRight, X } from "lucide-react";
+import { Award, Shield, MapPin, Globe, ArrowUpRight } from "lucide-react";
+import { LoginModal } from "./login-modal";
 
 type NavItem = { href: string; label: string };
 
@@ -61,14 +62,12 @@ export function PortalShell({
 
              <div className="flex items-center gap-3">
               <ThemeToggle />
-              <a 
-                href="https://inkai-mobile-web.vercel.app"
-                target="_blank"
-                rel="noreferrer"
+              <button 
+                onClick={() => setShowLoginModal(true)}
                 className="relative inline-flex items-center justify-center rounded-full bg-foreground px-5 py-2 text-xs font-semibold tracking-wide text-background transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:shadow-lg hover:shadow-accent/20 active:scale-95 cursor-pointer"
               >
                 Login Member
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -156,6 +155,9 @@ export function PortalShell({
           </div>
         </div>
       </footer>
+
+      {/* Login and Registration Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 }
