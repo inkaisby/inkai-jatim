@@ -38,12 +38,11 @@ export default function ProfilPage() {
 
       <ProfileTabs activeId={active} onChange={handleChange} />
 
-      <section className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <div className="rounded-3xl border border-border bg-gradient-to-br from-background/80 via-background/60 to-background/30 p-6 shadow-sm">
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              {active === "sejarah-inkai" && (
-                <>
+      <section className="grid gap-8">
+        <div className="rounded-3xl border border-border bg-gradient-to-br from-background/80 via-background/60 to-background/30 p-6 shadow-sm">
+          <div className="prose prose-sm max-w-none dark:prose-invert">
+            {active === "sejarah-inkai" && (
+              <>
                   <div className="mb-4 text-center">
                     <h1 className="mb-2 text-xl font-semibold md:text-2xl">
                       Sejarah Berdirinya INKAI
@@ -120,126 +119,122 @@ export default function ProfilPage() {
                     TNI/POLRI, ASN, Perbankan, BUMN, BUMD, Swasta serta
                     Affiliasi Pemerintah Daerah dan lain sebagainya.
                   </p>
-                </>
-              )}
+              </>
+            )}
 
-              {showVideo && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                  <div className="relative w-full max-w-3xl rounded-2xl bg-background p-4 shadow-lg">
-                    <button
-                      type="button"
-                      onClick={() => setShowVideo(false)}
-                      className="absolute right-3 top-3 rounded-full border border-border bg-background px-2 py-1 text-xs font-medium hover:bg-muted"
-                    >
-                      Tutup
-                    </button>
-                    <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
-                      <iframe
-                        className="h-full w-full"
-                        src="https://www.youtube.com/embed/ZqCoUzRUuQk"
-                        title="Sejarah Berdirinya INKAI"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    </div>
+            {showVideo && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                <div className="relative w-full max-w-3xl rounded-2xl bg-background p-4 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => setShowVideo(false)}
+                    className="absolute right-3 top-3 rounded-full border border-border bg-background px-2 py-1 text-xs font-medium hover:bg-muted"
+                  >
+                    Tutup
+                  </button>
+                  <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
+                    <iframe
+                      className="h-full w-full"
+                      src="https://www.youtube.com/embed/ZqCoUzRUuQk"
+                      title="Sejarah Berdirinya INKAI"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {active === "logo-inkai" && (
-                <div className="space-y-8">
-                  <div className="text-center">
-                    <div className="mb-6 flex justify-center">
-                      <img
-                        src="/images/logo-inkai.png"
-                        alt="Logo resmi INKAI"
-                        className="h-40 w-40 rounded-full bg-white object-contain shadow-md md:h-48 md:w-48"
-                      />
-                    </div>
-                    <h1 className="text-2xl font-semibold md:text-3xl">
-                      Makna Lambang INKAI
-                    </h1>
+            {active === "logo-inkai" && (
+              <div className="space-y-8">
+                <div className="text-center">
+                  <div className="mb-6 flex justify-center">
+                    <img
+                      src="/images/logo-inkai.png"
+                      alt="Logo resmi INKAI"
+                      className="h-40 w-40 rounded-full bg-white object-contain shadow-md md:h-48 md:w-48"
+                    />
                   </div>
+                  <h1 className="text-2xl font-semibold md:text-3xl">
+                    Makna Lambang INKAI
+                  </h1>
+                </div>
 
-                  <div className="flex justify-center">
-                    <div className="overflow-hidden rounded-2xl border border-border bg-muted">
-                      <img
-                        src="/images/makna-lambang-inkai.png"
-                        alt="Penjelasan makna lambang INKAI"
-                        className="h-auto max-h-[480px] w-full object-contain"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-center">
-                    <h2 className="mb-1 text-xl font-semibold md:text-2xl">
-                      Logo INKAI
-                    </h2>
-                    <p className="mb-6 text-sm text-muted-foreground md:text-base">
-                      Silakan download logo INKAI untuk keperluan organisasi.
-                    </p>
-                    <a
-                      href="/files/logo-inkai.png"
-                      className="inline-flex items-center gap-2 rounded-full bg-red-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-red-700"
-                      download
-                    >
-                      <span className="text-lg">⭳</span>
-                      <span>Download Logo INKAI</span>
-                    </a>
+                <div className="flex justify-center">
+                  <div className="overflow-hidden rounded-2xl border border-border bg-muted">
+                    <img
+                      src="/images/makna-lambang-inkai.png"
+                      alt="Penjelasan makna lambang INKAI"
+                      className="h-auto max-h-[480px] w-full object-contain"
+                    />
                   </div>
                 </div>
-              )}
 
-              {active === "struktur-organisasi" && (
-                <>
-                  <h2>Struktur Organisasi</h2>
-                  <p>
-                    Struktur organisasi INKAI tersusun dari Pengurus Pusat,
-                    pengurus provinsi, pengurus cabang/kabupaten-kota, hingga
-                    unit-unit dojo di lapangan. Setiap level memiliki peran
-                    dalam pembinaan, administrasi, dan koordinasi kegiatan,
-                    sehingga jalur komunikasi dan pembinaan dapat berjalan
-                    efektif.
+                <div className="text-center">
+                  <h2 className="mb-1 text-xl font-semibold md:text-2xl">
+                    Logo INKAI
+                  </h2>
+                  <p className="mb-6 text-sm text-muted-foreground md:text-base">
+                    Silakan download logo INKAI untuk keperluan organisasi.
                   </p>
-                  <p>
-                    Di Jawa Timur, struktur organisasi mengikuti garis besar
-                    tersebut, dengan pengurus provinsi yang membina dan
-                    mengoordinasikan cabang dan dojo-dojo anggota di seluruh
-                    wilayah Jatim.
-                  </p>
-                </>
-              )}
+                  <a
+                    href="/files/logo-inkai.png"
+                    className="inline-flex items-center gap-2 rounded-full bg-red-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-red-700"
+                    download
+                  >
+                    <span className="text-lg">⭳</span>
+                    <span>Download Logo INKAI</span>
+                  </a>
+                </div>
+              </div>
+            )}
 
-              {active === "visi-misi" && (
-                <>
-                  <h2>Visi &amp; Misi</h2>
-                  <p>
-                    Visi INKAI adalah menjadi perguruan karate yang berkelas
-                    dunia, berakar pada nilai-nilai luhur bangsa dan filosofi
-                    karate-do.
-                  </p>
-                  <p>Misi utama antara lain:</p>
-                  <ul>
-                    <li>
-                      Membina karateka yang berakhlak mulia, disiplin, dan
-                      tangguh.
-                    </li>
-                    <li>
-                      Mengembangkan prestasi karate di tingkat daerah, nasional,
-                      dan internasional.
-                    </li>
-                    <li>
-                      Menyelenggarakan pendidikan dan pelatihan karate yang
-                      terstruktur dan berkualitas.
-                    </li>
-                    <li>
-                      Menjaga keharmonisan organisasi dan kemitraan dengan
-                      lembaga olahraga terkait.
-                    </li>
-                  </ul>
-                </>
-              )}
-            </div>
+            {active === "struktur-organisasi" && (
+              <>
+                <h2>Struktur Organisasi</h2>
+                <p>
+                  Struktur organisasi INKAI tersusun dari Pengurus Pusat,
+                  pengurus provinsi, pengurus cabang/kabupaten-kota, hingga
+                  unit-unit dojo di lapangan. Setiap level memiliki peran dalam
+                  pembinaan, administrasi, dan koordinasi kegiatan, sehingga
+                  jalur komunikasi dan pembinaan dapat berjalan efektif.
+                </p>
+                <p>
+                  Di Jawa Timur, struktur organisasi mengikuti garis besar
+                  tersebut, dengan pengurus provinsi yang membina dan
+                  mengoordinasikan cabang dan dojo-dojo anggota di seluruh
+                  wilayah Jatim.
+                </p>
+              </>
+            )}
+
+            {active === "visi-misi" && (
+              <>
+                <h2>Visi &amp; Misi</h2>
+                <p>
+                  Visi INKAI adalah menjadi perguruan karate yang berkelas dunia,
+                  berakar pada nilai-nilai luhur bangsa dan filosofi karate-do.
+                </p>
+                <p>Misi utama antara lain:</p>
+                <ul>
+                  <li>
+                    Membina karateka yang berakhlak mulia, disiplin, dan tangguh.
+                  </li>
+                  <li>
+                    Mengembangkan prestasi karate di tingkat daerah, nasional,
+                    dan internasional.
+                  </li>
+                  <li>
+                    Menyelenggarakan pendidikan dan pelatihan karate yang
+                    terstruktur dan berkualitas.
+                  </li>
+                  <li>
+                    Menjaga keharmonisan organisasi dan kemitraan dengan lembaga
+                    olahraga terkait.
+                  </li>
+                </ul>
+              </>
+            )}
           </div>
         </div>
       </section>

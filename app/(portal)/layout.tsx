@@ -1,121 +1,21 @@
-import Link from "next/link";
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { NavLink } from "./_components/nav-link";
+import { PortalShell } from "../_components/portal-shell";
 
 export default function PortalLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-semibold tracking-tight"
-          >
-            <Image
-              src="/logo-inkai.png"
-              alt="Logo INKAI"
-              width={32}
-              height={32}
-              className="rounded-full bg-card p-0.5 ring-1 ring-border shadow-sm"
-              priority
-            />
-            <span>
-              <span className="text-accent">INKAI</span> Jatim
-            </span>
-          </Link>
-          <nav className="hidden items-center gap-1 md:flex">
-            <NavLink href="/profil">Profil</NavLink>
-            <NavLink href="/berita">Berita</NavLink>
-            <NavLink href="/agenda">Agenda</NavLink>
-            <NavLink href="/dojo">Dojo</NavLink>
-            <NavLink href="/dokumen">Dokumen</NavLink>
-          </nav>
-          <div className="flex items-center gap-2">
-            <button type="button" className="btn-outline px-4 py-1.5">
-              Login
-            </button>
-          </div>
-        </div>
-        <div className="mx-auto max-w-6xl px-4 pb-3 md:hidden">
-          <div className="flex flex-wrap gap-2">
-            <NavLink href="/profil">Profil</NavLink>
-            <NavLink href="/berita">Berita</NavLink>
-            <NavLink href="/agenda">Agenda</NavLink>
-            <NavLink href="/dojo">Dojo</NavLink>
-            <NavLink href="/dokumen">Dokumen</NavLink>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-6xl px-4 py-8">{children}</div>
-
-      <footer className="border-t border-border bg-background/60">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 md:grid-cols-2">
-          <div>
-            <div className="flex items-center gap-3">
-              <Image
-                src="/logo-inkai.png"
-                alt="Logo INKAI"
-                width={40}
-                height={40}
-                className="rounded-full bg-card p-0.5 ring-1 ring-border shadow-sm"
-              />
-            </div>
-            <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <div className="font-semibold text-foreground">
-                Pengurus INKAI Jawa Timur
-              </div>
-              <p>
-                <span className="text-foreground/80">Sekretariat :</span> Jl.
-                Penjaringan Asri IX.29, PS I i No.27, Penjaringan Sari, Kec.
-                Rungkut, Surabaya, Jawa Timur 60297
-              </p>
-              <a
-                className="hover:text-foreground underline underline-offset-4"
-                href="https://share.google/CLHoV0eeRrkoGfCxy"
-                target="_blank"
-                rel="noreferrer"
-              >
-                https://share.google/CLHoV0eeRrkoGfCxy
-              </a>
-            </div>
-          </div>
-          <div className="text-sm">
-            <div className="font-semibold">Menu</div>
-            <ul className="mt-2 space-y-1 text-muted-foreground">
-              <li>
-                <Link className="hover:text-foreground" href="/profil">
-                  Profil
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-foreground" href="/berita">
-                  Berita
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-foreground" href="/agenda">
-                  Agenda
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-foreground" href="/dojo">
-                  Dojo
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-foreground" href="/dokumen">
-                  Dokumen
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} INKAI Jatim
-        </div>
-      </footer>
-    </div>
+    <PortalShell
+      homeHref="/"
+      navItems={[
+        { href: "/profil", label: "Profil" },
+        { href: "/berita", label: "Berita" },
+        { href: "/agenda", label: "Agenda" },
+        { href: "/dojo", label: "Dojo" },
+        { href: "/dokumen", label: "Dokumen" },
+      ]}
+      NavLinkComponent={NavLink}
+    >
+      {children}
+    </PortalShell>
   );
 }
