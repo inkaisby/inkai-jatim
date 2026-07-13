@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import type { ComponentType } from "react";
+import { ThemeToggle } from "./theme-toggle";
 
 type NavItem = { href: string; label: string };
 
@@ -47,12 +48,14 @@ export function PortalShell({
             </nav>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <button type="button" className="btn-outline px-4 py-1.5">
                 Login
               </button>
             </div>
           </div>
         </div>
+
 
         <div className="mx-auto max-w-6xl px-4 pb-3 md:hidden">
           <div className="flex flex-wrap gap-2">

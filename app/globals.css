@@ -33,23 +33,22 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b0b0f;
-    --foreground: #f4f4f5;
+.dark {
+  --background: #0b0b0f;
+  --foreground: #f4f4f5;
 
-    --card: #101018;
-    --muted: #141420;
-    --muted-foreground: #a1a1aa;
-    --border: #27272a;
+  --card: #101018;
+  --muted: #141420;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
 
-    --accent: #ef4444;
-    --accent-foreground: #0b0b0f;
+  --accent: #ef4444;
+  --accent-foreground: #0b0b0f;
 
-    --ring: color-mix(in oklab, var(--accent) 45%, black);
-    --shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 18px 42px rgba(0, 0, 0, 0.5);
-  }
+  --ring: color-mix(in oklab, var(--accent) 45%, black);
+  --shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 18px 42px rgba(0, 0, 0, 0.5);
 }
+
 
 body {
   background: radial-gradient(
