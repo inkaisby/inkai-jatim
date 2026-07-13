@@ -27,9 +27,14 @@ Portal login terintegrasi dengan tabel operasional:
 - `portal_member_profiles` (status verifikasi portal)
 
 Migration:
-- `supabase/migrations/20260713_000002_portal_auth_members.sql` (legacy auth.users — digantikan)
-- `supabase/migrations/20260713_000003_portal_member_branch.sql` (legacy)
-- `supabase/migrations/20260713_000004_portal_user_member_integration.sql` (**aktif**)
+- `supabase/migrations/20260713_000004_portal_user_member_integration.sql`
+- `supabase/migrations/20260713_000005_production_hardening.sql` (**permissions + sync dojo**)
+
+Jalankan otomatis:
+```bash
+npm run db:migrate          # butuh SUPABASE_DB_URL
+npm run db:seed-permissions # butuh SUPABASE_SERVICE_ROLE_KEY
+```
 
 API routes:
 - `POST /api/auth/login`

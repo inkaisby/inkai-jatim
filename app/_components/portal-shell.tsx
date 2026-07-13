@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
@@ -8,6 +8,7 @@ import type { ComponentType } from "react";
 import { ThemeToggle } from "./theme-toggle";
 import { Award, Shield, MapPin, Globe, ArrowUpRight } from "lucide-react";
 import { LoginModal } from "./login-modal";
+import { AuthHeaderActions } from "./auth-header-actions";
 
 type NavItem = { href: string; label: string };
 
@@ -23,6 +24,13 @@ export function PortalShell({
   children: ReactNode;
 }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("login") === "1") {
+      setShowLoginModal(true);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen text-foreground flex flex-col justify-between">
@@ -62,12 +70,7 @@ export function PortalShell({
 
              <div className="flex items-center gap-3">
               <ThemeToggle />
-              <button 
-                onClick={() => setShowLoginModal(true)}
-                className="relative inline-flex items-center justify-center rounded-full bg-foreground px-5 py-2 text-xs font-semibold tracking-wide text-background transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:shadow-lg hover:shadow-accent/20 active:scale-95 cursor-pointer"
-              >
-                Login Member
-              </button>
+              <AuthHeaderActions onLoginClick={() => setShowLoginModal(true)} />
             </div>
           </div>
         </div>

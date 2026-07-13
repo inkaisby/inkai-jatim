@@ -4,6 +4,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { assignMemberRole, findUserByEmail } from "@/lib/auth/rbac";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getDojosByBranchId, getJatimProvince } from "@/lib/portal/organization";
+import { checkRateLimit, getClientIp } from "@/lib/auth/rate-limit";
 
 type RegisterBody = {
   name?: string;
@@ -15,6 +16,15 @@ type RegisterBody = {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`register:${ip}`, 8, 60_000);
+    if (!rate.ok) {
+      return NextResponse.json(
+        { error: `Terlalu banyak pendaftaran. Coba lagi dalam ${rate.retryAfterSec} detik.` },
+        { status: 429 },
+      );
+    }
+
     const body = (await request.json()) as RegisterBody;
     const name = body.name?.trim();
     const email = body.email?.trim().toLowerCase();

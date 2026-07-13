@@ -195,7 +195,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         setTimeout(() => {
           onClose();
-          window.location.reload();
+          window.location.href = "/dashboard";
         }, 1200);
       } else {
         if (
@@ -574,6 +574,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               >
                 Login di sini
               </button>
+            </p>
+          )}
+          {activeTab === "login" && (
+            <p className="mt-2">
+              <a href="/forgot-password" className="text-accent hover:underline font-semibold">
+                Lupa password?
+              </a>
             </p>
           )}
         </div>
