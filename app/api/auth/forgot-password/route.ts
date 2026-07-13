@@ -41,7 +41,8 @@ export async function POST(request: Request) {
         .update({ resetToken: token, resetTokenExpiry: expiry, updatedAt: new Date().toISOString() })
         .eq("id", user.id);
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
       const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
       if (process.env.NODE_ENV !== "production") {

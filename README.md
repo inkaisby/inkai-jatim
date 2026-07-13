@@ -11,12 +11,20 @@ cp .env.example .env.local
 npm run dev
 ```
 
-## Env wajib
+## Env wajib (Vercel)
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `PORTAL_SESSION_SECRET` (min 32 karakter random)
+| Variable | Keterangan |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://mzmdhkwleufeiyaspmns.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Key `sb_publishable_...` dari Supabase |
+| `SUPABASE_SECRET_KEY` | Key `sb_secret_...` (server only) |
+| `PORTAL_SESSION_SECRET` | Random string min 32 karakter |
+| `NEXT_PUBLIC_APP_URL` | `https://inkai-jatim.vercel.app` |
+| `DIRECT_URL` | PostgreSQL session pooler (port 5432) + password DB |
+
+Legacy alias yang juga didukung: `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+
+File siap salin: `vercel.env.copy.txt` (local only, tidak di-commit).
 
 ## Database migration
 

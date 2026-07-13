@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+import { getPortalSessionSecret, getSupabaseServiceRoleKey } from "@/lib/supabase/env";
+
 export async function GET() {
   const supabase = createSupabaseAdminClient();
-  const hasServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const hasSessionSecret = Boolean(process.env.PORTAL_SESSION_SECRET);
+  const hasServiceRole = Boolean(getSupabaseServiceRoleKey());
+  const hasSessionSecret = Boolean(getPortalSessionSecret());
 
   let dbOk = false;
   if (supabase) {

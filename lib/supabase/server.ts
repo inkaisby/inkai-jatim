@@ -1,23 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAnonKey, getSupabaseEnv, getSupabaseUrl } from "./env";
 
-export type SupabaseEnvStatus =
-  | { ok: true; url: string; anonKey: string }
-  | { ok: false; error: string };
-
-export function getSupabaseEnv(): SupabaseEnvStatus {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    return {
-      ok: false,
-      error:
-        "Supabase env belum diset. Set `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY`.",
-    };
-  }
-
-  return { ok: true, url, anonKey };
-}
+export type { SupabaseEnvStatus } from "./env";
+export { getSupabaseEnv } from "./env";
 
 export function createSupabaseServerClient() {
   const env = getSupabaseEnv();
@@ -32,3 +17,7 @@ export function createSupabaseServerClient() {
   });
 }
 
+// Re-export for callers that need raw values
+export function getSupabasePublicConfig() {
+  return { url: getSupabaseUrl(), anonKey: getSupabaseAnonKey() };
+}

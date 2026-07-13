@@ -13,10 +13,14 @@ import pg from "pg";
 const { Client } = pg;
 
 async function main() {
-  const dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-  if (!dbUrl) {
-    console.error("Missing SUPABASE_DB_URL or DATABASE_URL.");
-    console.error("Copy connection string from Supabase > Project Settings > Database.");
+  const dbUrl =
+    process.env.DIRECT_URL?.trim() ||
+    process.env.SUPABASE_DB_URL?.trim() ||
+    process.env.DATABASE_URL?.trim();
+
+  if (!dbUrl || dbUrl.includes("[YOUR-PASSWORD]")) {
+    console.error("Missing DIRECT_URL / SUPABASE_DB_URL / DATABASE_URL.");
+    console.error("Set DIRECT_URL with your Supabase database password (session pooler, port 5432).");
     process.exit(1);
   }
 
