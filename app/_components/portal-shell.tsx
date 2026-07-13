@@ -75,9 +75,9 @@ export function PortalShell({
         {/* MODAL POPUP LOGIN */}
         {showLoginModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col my-auto max-h-[90vh]">
               {/* Header Modal */}
-              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
                 <span className="font-semibold text-lg">Login</span>
                 <button 
                   type="button" 
@@ -88,8 +88,8 @@ export function PortalShell({
                 </button>
               </div>
 
-              {/* Iframe Login */}
-              <div className="relative h-[550px] w-full bg-background">
+              {/* Iframe Login Container */}
+              <div className="relative flex-1 w-full bg-background min-h-[300px] h-[550px] max-h-[70vh]">
                 <iframe
                   src="https://inkai-mobile-web.vercel.app/"
                   className="h-full w-full border-0"
