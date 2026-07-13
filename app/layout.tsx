@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "INKAI Jatim",
   description: "Portal resmi INKAI Jawa Timur",
+  icons: {
+    icon: "/logo-inkai.png",
+    apple: "/logo-inkai.png",
+  },
 };
 
 export default function RootLayout({
