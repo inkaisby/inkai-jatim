@@ -49,7 +49,7 @@ export function DashboardSidebar({
           className="rounded-full bg-background p-0.5 ring-1 ring-border"
         />
         {!collapsed && (
-          <div className="min-w-0 animate-fade-in">
+          <div className="min-w-0">
             <p className="truncate text-sm font-bold">
               <span className="text-accent">INKAI</span> Dashboard
             </p>
@@ -61,7 +61,7 @@ export function DashboardSidebar({
       </div>
 
       <nav className="flex-1 space-y-1 p-3">
-        {NAV_ITEMS.map((item, index) => {
+        {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
           return (
@@ -69,14 +69,13 @@ export function DashboardSidebar({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`dashboard-nav-item group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 animate-slide-in-left ${
+              className={`dashboard-nav-item group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 active
                   ? "bg-accent text-accent-foreground shadow-md shadow-accent/20"
                   : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               }`}
-              style={{ animationDelay: `${index * 60}ms` }}
             >
-              <Icon className={`h-4.5 w-4.5 shrink-0 ${active ? "" : "group-hover:scale-110 transition-transform"}`} />
+              <Icon className="h-4.5 w-4.5 shrink-0" />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           );
@@ -103,7 +102,7 @@ export function DashboardSidebar({
         </button>
 
         {!collapsed && (
-          <div className="rounded-xl bg-muted/40 px-3 py-2.5 animate-fade-in">
+          <div className="rounded-xl bg-muted/40 px-3 py-2.5">
             <p className="truncate text-xs font-semibold">{user.fullName ?? user.email}</p>
             <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
           </div>

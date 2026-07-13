@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { JATIM_PROVINCE_NAME } from "@/lib/portal/organization";
 import type { PortalSessionUser } from "@/lib/auth/types";
@@ -8,6 +9,8 @@ export type HierarchyNode = {
   id: string | null;
   name: string;
 };
+
+export type DojoSummary = { id: string; name: string; address: string | null };
 
 export type DashboardContext = {
   roleLabel: string;
@@ -21,8 +24,11 @@ export type DashboardContext = {
   };
   profileStatus: string | null;
   memberStatus: string | null;
-  recentDojos: { id: string; name: string; address: string | null }[];
+  recentDojos: DojoSummary[];
+  allDojos: DojoSummary[];
 };
+
+const RECENT_DOJO_LIMIT = 6;
 
 async function countMembersInDojos(dojoIds: string[]) {
   if (dojoIds.length === 0) return 0;
@@ -38,20 +44,20 @@ async function countMembersInDojos(dojoIds: string[]) {
   return count ?? 0;
 }
 
-async function getDojoIdsForBranch(branchId: string) {
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return [];
-
-  const { data } = await supabase
-    .from("Dojo")
-    .select("id")
-    .eq("branchId", branchId)
-    .eq("isDeleted", false);
-
-  return data?.map((d) => d.id) ?? [];
+function toDojoSummaries(
+  dojos: DojoSummary[] | null | undefined,
+): DojoSummary[] {
+  return dojos ?? [];
 }
 
-export async function getDashboardContext(user: PortalSessionUser): Promise<DashboardContext> {
+function splitDojoLists(all: DojoSummary[]) {
+  return {
+    allDojos: all,
+    recentDojos: all.slice(0, RECENT_DOJO_LIMIT),
+  };
+}
+
+export const getDashboardContext = cache(async (user: PortalSessionUser): Promise<DashboardContext> => {
   const supabase = createSupabaseAdminClient();
   const hierarchyLevel = getHierarchyLevel(user.roles);
   const roleLabel = getPrimaryRoleLabel(user.roles);
@@ -61,7 +67,8 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
   ];
 
   let stats = { provinces: 0, branches: 0, dojos: 0, members: 0 };
-  let recentDojos: DashboardContext["recentDojos"] = [];
+  let recentDojos: DojoSummary[] = [];
+  let allDojos: DojoSummary[] = [];
   let memberStatus: string | null = null;
   let profileStatus = user.profileStatus;
 
@@ -77,6 +84,7 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
       profileStatus,
       memberStatus,
       recentDojos,
+      allDojos,
     };
   }
 
@@ -92,22 +100,23 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
     name: jatimProvince?.name ?? JATIM_PROVINCE_NAME,
   });
 
-  const { data: memberRecord } = await supabase
-    .from("Member")
-    .select("id, status, dojoId, Dojo(id, name, address, branchId, Branch(id, name, provinceId))")
-    .eq("userId", user.id)
-    .eq("isDeleted", false)
-    .maybeSingle();
+  const [{ data: memberRecord }, { data: portalProfile }] = await Promise.all([
+    supabase
+      .from("Member")
+      .select("id, status, dojoId, Dojo(id, name, address, branchId, Branch(id, name, provinceId))")
+      .eq("userId", user.id)
+      .eq("isDeleted", false)
+      .maybeSingle(),
+    supabase
+      .from("portal_member_profiles")
+      .select("status, branch_name, dojo_name, branch_id, dojo_id")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
   if (memberRecord) {
     memberStatus = memberRecord.status;
   }
-
-  const { data: portalProfile } = await supabase
-    .from("portal_member_profiles")
-    .select("status, branch_name, dojo_name, branch_id, dojo_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
 
   if (portalProfile?.status) profileStatus = portalProfile.status;
 
@@ -146,6 +155,26 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
 
       if (jatimBranches?.[0]) {
         hierarchy.push({ level: "cabang", id: jatimBranches[0].id, name: jatimBranches[0].name });
+
+        const branchIds = (
+          await supabase
+            .from("Branch")
+            .select("id")
+            .eq("provinceId", jatimProvince.id)
+            .eq("isDeleted", false)
+        ).data?.map((b) => b.id) ?? [];
+
+        if (branchIds.length > 0) {
+          const { data: provinceDojos } = await supabase
+            .from("Dojo")
+            .select("id, name, address")
+            .in("branchId", branchIds)
+            .eq("isDeleted", false)
+            .order("name");
+
+          const listed = toDojoSummaries(provinceDojos);
+          ({ allDojos, recentDojos } = splitDojoLists(listed));
+        }
       }
     }
   } else if (hierarchyLevel === "provinsi" || (hierarchyLevel === "cabang" && scopeBranchId)) {
@@ -171,21 +200,24 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
         hierarchy.push({ level: "cabang", id: branch.id, name: branch.name });
       }
 
-      const dojoIds = await getDojoIdsForBranch(branchId);
-      const { data: dojos } = await supabase
+      const { data: branchDojos } = await supabase
         .from("Dojo")
         .select("id, name, address")
         .eq("branchId", branchId)
         .eq("isDeleted", false)
-        .order("name")
-        .limit(6);
+        .order("name");
 
-      recentDojos = dojos ?? [];
+      const listed = toDojoSummaries(branchDojos);
+      ({ allDojos, recentDojos } = splitDojoLists(listed));
+
+      const dojoIds = listed.map((d) => d.id);
+      const memberCount = await countMembersInDojos(dojoIds);
+
       stats = {
         provinces: 1,
         branches: 1,
         dojos: dojoIds.length,
-        members: await countMembersInDojos(dojoIds),
+        members: memberCount,
       };
 
       if (scopeDojoId) {
@@ -209,7 +241,10 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
       const branch = Array.isArray(branchData) ? branchData[0] : branchData;
       if (branch) hierarchy.push({ level: "cabang", id: branch.id, name: branch.name });
       hierarchy.push({ level: "dojo", id: dojo.id, name: dojo.name });
-      recentDojos = [{ id: dojo.id, name: dojo.name, address: dojo.address }];
+
+      const single = [{ id: dojo.id, name: dojo.name, address: dojo.address }];
+      allDojos = single;
+      recentDojos = single;
       stats = {
         provinces: 1,
         branches: 1,
@@ -240,7 +275,9 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
       }
 
       hierarchy.push({ level: "dojo", id: dojo.id, name: dojo.name });
-      recentDojos = [{ id: dojo.id, name: dojo.name, address: dojo.address }];
+      const single = [{ id: dojo.id, name: dojo.name, address: dojo.address }];
+      allDojos = single;
+      recentDojos = single;
       stats = {
         provinces: 1,
         branches: 1,
@@ -273,5 +310,6 @@ export async function getDashboardContext(user: PortalSessionUser): Promise<Dash
     profileStatus,
     memberStatus,
     recentDojos,
+    allDojos,
   };
-}
+});

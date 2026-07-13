@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { PortalSessionPayload, PortalSessionUser } from "./types";
@@ -36,7 +37,7 @@ export async function readSessionToken(token: string) {
   return payload as unknown as PortalSessionPayload;
 }
 
-export async function getSessionUser() {
+export const getSessionUser = cache(async () => {
   const cookieStore = await cookies();
   const token = cookieStore.get(PORTAL_SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -54,7 +55,7 @@ export async function getSessionUser() {
   } catch {
     return null;
   }
-}
+});
 
 export function getSessionCookieOptions(maxAge = SESSION_MAX_AGE_SECONDS) {
   return {

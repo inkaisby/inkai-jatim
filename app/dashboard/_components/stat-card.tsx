@@ -5,19 +5,14 @@ export function StatCard({
   value,
   hint,
   icon: Icon,
-  delay = 0,
 }: {
   title: string;
   value: string | number;
   hint?: string;
   icon: LucideIcon;
-  delay?: number;
 }) {
   return (
-    <div
-      className="glass-card group p-5 animate-fade-in-up"
-      style={{ animationDelay: `${delay}ms` }}
-    >
+    <div className="glass-card group p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

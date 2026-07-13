@@ -34,7 +34,7 @@ export function DashboardTopbar({
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="min-w-0 animate-fade-in">
+          <div className="min-w-0">
             <p className="truncate text-sm font-semibold md:text-base">
               Selamat datang, {user.fullName ?? user.email.split("@")[0]}
             </p>

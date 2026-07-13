@@ -3,26 +3,26 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import type { PortalSessionUser } from "@/lib/auth/types";
-import type { HierarchyNode } from "@/lib/dashboard/context";
+import type { DashboardContext } from "@/lib/dashboard/context";
+import { DashboardDataProvider } from "./dashboard-data-context";
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { DashboardTopbar } from "./dashboard-topbar";
 import { DashboardFooter } from "./dashboard-footer";
 
 export function DashboardShell({
   user,
-  roleLabel,
-  hierarchy,
+  context,
   children,
 }: {
   user: PortalSessionUser;
-  roleLabel: string;
-  hierarchy: HierarchyNode[];
+  context: DashboardContext;
   children: ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   return (
+    <DashboardDataProvider value={{ user, ...context }}>
     <div className="dashboard-root min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
         <div className="hidden lg:block shrink-0">
@@ -61,12 +61,12 @@ export function DashboardShell({
         <div className="flex min-w-0 flex-1 flex-col">
           <DashboardTopbar
             user={user}
-            roleLabel={roleLabel}
-            hierarchy={hierarchy}
+            roleLabel={context.roleLabel}
+            hierarchy={context.hierarchy}
             onOpenSidebar={() => setSidebarOpen(true)}
           />
 
-          <main className="flex-1 px-4 py-5 md:px-6 md:py-6 animate-fade-in-up">
+          <main className="flex-1 px-4 py-5 md:px-6 md:py-6">
             {children}
           </main>
 
@@ -74,5 +74,6 @@ export function DashboardShell({
         </div>
       </div>
     </div>
+    </DashboardDataProvider>
   );
 }

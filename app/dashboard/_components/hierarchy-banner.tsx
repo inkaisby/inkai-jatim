@@ -10,7 +10,7 @@ const LEVEL_ICON = {
 
 export function HierarchyBanner({ hierarchy }: { hierarchy: HierarchyNode[] }) {
   return (
-    <div className="glass-card-static overflow-hidden p-0 animate-fade-in-up">
+    <div className="glass-card-static overflow-hidden p-0">
       <div className="border-b border-border/60 bg-muted/30 px-5 py-3">
         <h2 className="text-sm font-semibold">Hierarki Organisasi Anda</h2>
         <p className="text-xs text-muted-foreground">
@@ -18,13 +18,12 @@ export function HierarchyBanner({ hierarchy }: { hierarchy: HierarchyNode[] }) {
         </p>
       </div>
       <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
-        {hierarchy.map((node, index) => {
+        {hierarchy.map((node) => {
           const Icon = LEVEL_ICON[node.level];
           return (
             <div
               key={`${node.level}-${node.id ?? node.name}`}
-              className="rounded-2xl border border-border/70 bg-background/50 p-4 transition-all duration-300 hover:border-accent/30 hover:shadow-md animate-scale-in"
-              style={{ animationDelay: `${index * 80}ms` }}
+              className="rounded-2xl border border-border/70 bg-background/50 p-4 transition-colors hover:border-accent/30"
             >
               <div className="mb-3 inline-flex rounded-xl bg-accent/10 p-2 text-accent">
                 <Icon className="h-4 w-4" />

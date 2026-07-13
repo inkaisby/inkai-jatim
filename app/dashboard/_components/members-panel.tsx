@@ -1,14 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, RefreshCw, Users } from "lucide-react";
 import type { MemberListItem } from "@/lib/members/queries";
 
-export function MembersPanel({ canVerify }: { canVerify: boolean }) {
-  const [members, setMembers] = useState<MemberListItem[]>([]);
+export function MembersPanel({
+  canVerify,
+  initialMembers,
+  initialError = null,
+}: {
+  canVerify: boolean;
+  initialMembers: MemberListItem[];
+  initialError?: string | null;
+}) {
+  const router = useRouter();
+  const [members, setMembers] = useState<MemberListItem[]>(initialMembers);
   const [filter, setFilter] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(initialError);
   const [actingId, setActingId] = useState<string | null>(null);
 
   const loadMembers = useCallback(async () => {
@@ -32,9 +42,28 @@ export function MembersPanel({ canVerify }: { canVerify: boolean }) {
     }
   }, [filter]);
 
-  useEffect(() => {
-    void loadMembers();
-  }, [loadMembers]);
+  async function handleFilterChange(nextFilter: string) {
+    if (nextFilter === filter) return;
+    setFilter(nextFilter);
+    setLoading(true);
+    setMessage(null);
+    try {
+      const query = nextFilter === "all" ? "" : `?status=${encodeURIComponent(nextFilter)}`;
+      const response = await fetch(`/api/members${query}`);
+      const json = (await response.json()) as { data?: MemberListItem[]; error?: string };
+      if (!response.ok) {
+        setMessage(json.error ?? "Gagal memuat anggota.");
+        setMembers([]);
+        return;
+      }
+      setMembers(json.data ?? []);
+    } catch {
+      setMessage("Gagal memuat anggota.");
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleVerify(memberId: string, action: "approve" | "reject") {
     setActingId(memberId);
@@ -52,6 +81,7 @@ export function MembersPanel({ canVerify }: { canVerify: boolean }) {
       }
       setMessage(action === "approve" ? "Anggota disetujui." : "Anggota ditolak.");
       await loadMembers();
+      router.refresh();
     } catch {
       setMessage("Verifikasi gagal.");
     } finally {
@@ -76,8 +106,8 @@ export function MembersPanel({ canVerify }: { canVerify: boolean }) {
             <button
               key={item.id}
               type="button"
-              onClick={() => setFilter(item.id)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+              onClick={() => void handleFilterChange(item.id)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                 filter === item.id
                   ? "bg-accent text-accent-foreground"
                   : "border border-border/70 text-muted-foreground hover:text-foreground"
@@ -98,7 +128,7 @@ export function MembersPanel({ canVerify }: { canVerify: boolean }) {
       </div>
 
       {message && (
-        <div className="rounded-xl border border-border/70 bg-muted/40 px-4 py-3 text-sm animate-fade-in">
+        <div className="rounded-xl border border-border/70 bg-muted/40 px-4 py-3 text-sm">
           {message}
         </div>
       )}
@@ -127,12 +157,8 @@ export function MembersPanel({ canVerify }: { canVerify: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {members.map((member, index) => (
-                  <tr
-                    key={member.id}
-                    className="border-b border-border/40 animate-fade-in-up"
-                    style={{ animationDelay: `${index * 40}ms` }}
-                  >
+                {members.map((member) => (
+                  <tr key={member.id} className="border-b border-border/40">
                     <td className="px-4 py-3 font-medium">{member.fullName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{member.email ?? "—"}</td>
                     <td className="px-4 py-3">
