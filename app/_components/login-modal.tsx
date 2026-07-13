@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { X, Mail, Lock, User, Eye, EyeOff, ShieldCheck, ArrowRight } from "lucide-react";
+import { X, Mail, Lock, User, Eye, EyeOff, MapPin, ChevronDown, ArrowRight } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getJatimBranches, type BranchOption } from "@/lib/portal/branches";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -20,8 +21,11 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     email: "",
     password: "",
     confirmPassword: "",
-    memberId: "",
+    branchId: "",
   });
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [branchesError, setBranchesError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -39,6 +43,36 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== "register") return;
+
+    let cancelled = false;
+
+    async function loadBranches() {
+      setBranchesLoading(true);
+      setBranchesError(null);
+
+      const result = await getJatimBranches();
+
+      if (cancelled) return;
+
+      if (!result.ok) {
+        setBranches([]);
+        setBranchesError(result.error);
+      } else {
+        setBranches(result.data);
+      }
+
+      setBranchesLoading(false);
+    }
+
+    void loadBranches();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, activeTab]);
 
   if (!isOpen) return null;
 
@@ -61,7 +95,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     return error.message;
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -130,7 +166,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         window.location.reload();
       }, 1200);
     } else {
-      if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      if (
+        !formData.name ||
+        !formData.branchId ||
+        !formData.email ||
+        !formData.password ||
+        !formData.confirmPassword
+      ) {
         setMessage({ type: "error", text: "Silakan isi semua field wajib." });
         setIsLoading(false);
         return;
@@ -146,14 +188,16 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         return;
       }
 
+      const selectedBranch = branches.find((branch) => branch.id === formData.branchId);
+
       const { error } = await supabase.auth.signUp({
         email: formData.email.trim(),
         password: formData.password,
         options: {
           data: {
             full_name: formData.name.trim(),
-            member_id: formData.memberId.trim() || null,
-            dojo_name: formData.memberId.trim() || null,
+            branch_id: formData.branchId,
+            branch_name: selectedBranch?.name ?? null,
           },
         },
       });
@@ -176,7 +220,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           email: formData.email.trim(),
           password: "",
           confirmPassword: "",
-          memberId: "",
+          branchId: "",
         });
       }, 2500);
     }
@@ -294,25 +338,42 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 </div>
               </div>
 
-              {/* Member ID (Optional) */}
+              {/* Branch */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground flex justify-between">
-                  <span>No. Anggota / Dojo</span>
-                  <span className="text-[10px] text-muted-foreground/60 font-normal">Opsional</span>
-                </label>
+                <label className="text-xs font-semibold text-muted-foreground">Cabang</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-muted-foreground">
-                    <ShieldCheck className="h-4 w-4" />
+                    <MapPin className="h-4 w-4" />
                   </span>
-                  <input
-                    type="text"
-                    name="memberId"
-                    value={formData.memberId}
+                  <select
+                    name="branchId"
+                    value={formData.branchId}
                     onChange={handleInputChange}
-                    placeholder="Contoh: INKAI-JTM-001 / Dojo Rungkut"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border/80 bg-background/50 text-sm focus:outline-hidden focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all"
-                  />
+                    required
+                    disabled={branchesLoading || !!branchesError}
+                    className="w-full appearance-none pl-10 pr-10 py-2.5 rounded-xl border border-border/80 bg-background/50 text-sm focus:outline-hidden focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all disabled:opacity-60"
+                  >
+                    <option value="">
+                      {branchesLoading
+                        ? "Memuat daftar cabang..."
+                        : branchesError
+                          ? "Gagal memuat cabang"
+                          : "Pilih cabang"}
+                    </option>
+                    {branches.map((branch) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name}
+                        {branch.city ? ` — ${branch.city}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                    <ChevronDown className="h-4 w-4" />
+                  </span>
                 </div>
+                {branchesError && (
+                  <p className="text-[11px] text-destructive">{branchesError}</p>
+                )}
               </div>
             </>
           )}

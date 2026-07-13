@@ -22,8 +22,12 @@ Buat `.env.local`:
 Migration auth ada di:
 - `supabase/migrations/20260713_000002_portal_auth_members.sql`
 
-Tabel `portal_member_profiles` menyimpan profil anggota (nama, no. anggota/dojo, status verifikasi).
+Tabel `portal_member_profiles` menyimpan profil anggota (nama, cabang, status verifikasi).
+Dropdown pendaftaran mengambil data dari tabel `Branch` (filter provinsi Jawa Timur).
 Trigger `on_auth_user_created_portal_member` otomatis membuat profil saat user mendaftar via Supabase Auth.
+
+Migration cabang:
+- `supabase/migrations/20260713_000003_portal_member_branch.sql`
 
 Di Supabase Dashboard, pastikan:
 - **Authentication > Providers > Email** aktif
