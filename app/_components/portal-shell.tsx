@@ -59,47 +59,19 @@ export function PortalShell({
 
             <div className="h-6 w-[1px] bg-border hidden md:block" />
 
-            <div className="flex items-center gap-3">
+             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <button 
-                type="button" 
-                onClick={() => setShowLoginModal(true)}
+              <a 
+                href="https://inkai-mobile-web.vercel.app"
+                target="_blank"
+                rel="noreferrer"
                 className="relative inline-flex items-center justify-center rounded-full bg-foreground px-5 py-2 text-xs font-semibold tracking-wide text-background transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:shadow-lg hover:shadow-accent/20 active:scale-95 cursor-pointer"
               >
                 Login Member
-              </button>
+              </a>
             </div>
           </div>
         </div>
-
-        {/* MODAL POPUP LOGIN */}
-        {showLoginModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col my-auto max-h-[95vh]">
-              {/* Header Modal */}
-              <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
-                <span className="font-semibold text-lg">Login</span>
-                <button 
-                  type="button" 
-                  onClick={() => setShowLoginModal(false)}
-                  className="rounded-full p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Iframe Login Container */}
-              <div className="relative flex-1 w-full bg-background min-h-[450px] h-[650px] max-h-[80vh]">
-                <iframe
-                  src="https://inkai-mobile-web.vercel.app/login"
-                  className="h-full w-full border-0"
-                  title="Login Form"
-                  allow="clipboard-write"
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Mobile quick-nav overlay panel */}
         <div className="mx-auto max-w-6xl px-6 pb-4 md:hidden border-t border-border/40 pt-2">
