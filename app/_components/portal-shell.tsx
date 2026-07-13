@@ -91,7 +91,7 @@ export function PortalShell({
               {/* Iframe Login Container */}
               <div className="relative flex-1 w-full bg-background min-h-[300px] h-[550px] max-h-[70vh]">
                 <iframe
-                  src="https://inkai-mobile-web.vercel.app/"
+                  src="https://inkai-mobile-web.vercel.app/login"
                   className="h-full w-full border-0"
                   title="Login Form"
                   allow="clipboard-write"
