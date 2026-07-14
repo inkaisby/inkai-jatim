@@ -1,5 +1,6 @@
 import { cache } from "react";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getInkaiTokenFromCookies } from "@/lib/inkai-api/cookies";
+import { inkaiFetch } from "@/lib/inkai-api/server";
 import { JATIM_PROVINCE_NAME } from "@/lib/portal/organization";
 import type { PortalSessionUser } from "@/lib/auth/types";
 import { getHierarchyLevel, getPrimaryRoleLabel } from "./labels";
@@ -30,20 +31,6 @@ export type DashboardContext = {
 
 const RECENT_DOJO_LIMIT = 6;
 
-async function countMembersInDojos(dojoIds: string[]) {
-  if (dojoIds.length === 0) return 0;
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return 0;
-
-  const { count } = await supabase
-    .from("Member")
-    .select("*", { count: "exact", head: true })
-    .in("dojoId", dojoIds)
-    .eq("isDeleted", false);
-
-  return count ?? 0;
-}
-
 function toDojoSummaries(
   dojos: DojoSummary[] | null | undefined,
 ): DojoSummary[] {
@@ -57,13 +44,22 @@ function splitDojoLists(all: DojoSummary[]) {
   };
 }
 
+function mapDojoRow(row: Record<string, unknown>): DojoSummary {
+  return {
+    id: String(row.id),
+    name: String(row.name ?? ""),
+    address: (row.address as string | null) ?? null,
+  };
+}
+
 export const getDashboardContext = cache(async (user: PortalSessionUser): Promise<DashboardContext> => {
-  const supabase = createSupabaseAdminClient();
+  const token = await getInkaiTokenFromCookies();
   const hierarchyLevel = getHierarchyLevel(user.roles);
   const roleLabel = getPrimaryRoleLabel(user.roles);
 
   const hierarchy: HierarchyNode[] = [
     { level: "pusat", id: null, name: "INKAI Pusat (Nasional)" },
+    { level: "provinsi", id: user.scope.provinceId, name: JATIM_PROVINCE_NAME },
   ];
 
   let stats = { provinces: 0, branches: 0, dojos: 0, members: 0 };
@@ -72,14 +68,11 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
   let memberStatus: string | null = null;
   let profileStatus = user.profileStatus;
 
-  if (!supabase) {
+  if (!token) {
     return {
       roleLabel,
       hierarchyLevel,
-      hierarchy: [
-        ...hierarchy,
-        { level: "provinsi", id: null, name: JATIM_PROVINCE_NAME },
-      ],
+      hierarchy,
       stats,
       profileStatus,
       memberStatus,
@@ -88,218 +81,101 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
     };
   }
 
-  const { data: jatimProvince } = await supabase
-    .from("Province")
-    .select("id, name")
-    .eq("name", JATIM_PROVINCE_NAME)
-    .maybeSingle();
-
-  hierarchy.push({
-    level: "provinsi",
-    id: jatimProvince?.id ?? null,
-    name: jatimProvince?.name ?? JATIM_PROVINCE_NAME,
-  });
-
-  const [{ data: memberRecord }, { data: portalProfile }] = await Promise.all([
-    supabase
-      .from("Member")
-      .select("id, status, dojoId, Dojo(id, name, address, branchId, Branch(id, name, provinceId))")
-      .eq("userId", user.id)
-      .eq("isDeleted", false)
-      .maybeSingle(),
-    supabase
-      .from("portal_member_profiles")
-      .select("status, branch_name, dojo_name, branch_id, dojo_id")
-      .eq("user_id", user.id)
-      .maybeSingle(),
+  const [statsRes, provincesRes, meRes] = await Promise.all([
+    inkaiFetch("/v1/dashboard/stats", {}, token),
+    inkaiFetch("/v1/org/provinces", {}, token),
+    inkaiFetch("/v1/auth/me", {}, token),
   ]);
 
-  if (memberRecord) {
-    memberStatus = memberRecord.status;
+  if (meRes.res.ok) {
+    const me = (meRes.data.data as Record<string, unknown>) ?? {};
+    memberStatus = (me.status as string | null) ?? null;
+    if (memberStatus) {
+      profileStatus =
+        memberStatus === "PENDING"
+          ? "pending"
+          : memberStatus === "REJECTED"
+            ? "rejected"
+            : "approved";
+    }
   }
 
-  if (portalProfile?.status) profileStatus = portalProfile.status;
-
-  const scopeBranchId =
-    user.scope.branchId ??
-    (memberRecord?.Dojo as { Branch?: { id: string } } | null)?.Branch?.id ??
-    portalProfile?.branch_id ??
-    null;
-
-  const scopeDojoId =
-    user.scope.dojoId ?? memberRecord?.dojoId ?? portalProfile?.dojo_id ?? null;
-
-  if (hierarchyLevel === "nasional") {
-    const [{ count: provinceCount }, { count: branchCount }, { count: dojoCount }, { count: memberCount }] =
-      await Promise.all([
-        supabase.from("Province").select("*", { count: "exact", head: true }).eq("isDeleted", false),
-        supabase.from("Branch").select("*", { count: "exact", head: true }).eq("isDeleted", false),
-        supabase.from("Dojo").select("*", { count: "exact", head: true }).eq("isDeleted", false),
-        supabase.from("Member").select("*", { count: "exact", head: true }).eq("isDeleted", false),
-      ]);
-
+  if (statsRes.res.ok) {
+    const s = (statsRes.data.data as Record<string, unknown>) ?? {};
     stats = {
-      provinces: provinceCount ?? 0,
-      branches: branchCount ?? 0,
-      dojos: dojoCount ?? 0,
-      members: memberCount ?? 0,
+      provinces: Number(s.totalProvinces ?? 1),
+      branches: Number(s.totalBranches ?? 0),
+      dojos: Number(s.totalDojos ?? 0),
+      members: Number(s.totalMembers ?? 0),
     };
+  }
 
-    if (jatimProvince) {
-      const { data: jatimBranches } = await supabase
-        .from("Branch")
-        .select("id, name")
-        .eq("provinceId", jatimProvince.id)
-        .eq("isDeleted", false)
-        .limit(1);
+  const provinces = provincesRes.res.ok
+    ? ((provincesRes.data.data as Array<Record<string, unknown>>) ?? [])
+    : [];
+  const jatimProvince = provinces.find(
+    (p) => String(p.name).toUpperCase() === JATIM_PROVINCE_NAME.toUpperCase(),
+  );
+  if (jatimProvince) {
+    hierarchy[1] = {
+      level: "provinsi",
+      id: String(jatimProvince.id),
+      name: String(jatimProvince.name),
+    };
+  }
 
-      if (jatimBranches?.[0]) {
-        hierarchy.push({ level: "cabang", id: jatimBranches[0].id, name: jatimBranches[0].name });
+  const scopeBranchId = user.scope.branchId;
+  const scopeDojoId = user.scope.dojoId;
 
-        const branchIds = (
-          await supabase
-            .from("Branch")
-            .select("id")
-            .eq("provinceId", jatimProvince.id)
-            .eq("isDeleted", false)
-        ).data?.map((b) => b.id) ?? [];
-
-        if (branchIds.length > 0) {
-          const { data: provinceDojos } = await supabase
-            .from("Dojo")
-            .select("id, name, address")
-            .in("branchId", branchIds)
-            .eq("isDeleted", false)
-            .order("name");
-
-          const listed = toDojoSummaries(provinceDojos);
-          ({ allDojos, recentDojos } = splitDojoLists(listed));
-        }
+  if (scopeDojoId) {
+    const { res, data } = await inkaiFetch(`/v1/org/dojo/${scopeDojoId}`, {}, token);
+    if (res.ok) {
+      const dojo = (data.data as Record<string, unknown>) ?? {};
+      const branch = dojo.branch as { id?: string; name?: string } | undefined;
+      if (branch?.name) {
+        hierarchy.push({ level: "cabang", id: branch.id ?? null, name: branch.name });
       }
+      hierarchy.push({ level: "dojo", id: scopeDojoId, name: String(dojo.name ?? "") });
+      const single = [mapDojoRow(dojo)];
+      allDojos = single;
+      recentDojos = single;
     }
-  } else if (hierarchyLevel === "provinsi" || (hierarchyLevel === "cabang" && scopeBranchId)) {
-    const branchId = scopeBranchId ?? (jatimProvince
-      ? (
-          await supabase
-            .from("Branch")
-            .select("id, name")
-            .eq("provinceId", jatimProvince.id)
-            .eq("isDeleted", false)
-            .limit(1)
-        ).data?.[0]?.id
-      : null);
-
-    if (branchId) {
-      const { data: branch } = await supabase
-        .from("Branch")
-        .select("id, name")
-        .eq("id", branchId)
-        .maybeSingle();
-
+  } else if (scopeBranchId) {
+    const { res, data } = await inkaiFetch(`/v1/org/dojos/${scopeBranchId}`, {}, token);
+    if (res.ok) {
+      const branchRes = await inkaiFetch(`/v1/org/branches/all`, {}, token);
+      const branches = branchRes.res.ok
+        ? ((branchRes.data.data as Array<Record<string, unknown>>) ?? [])
+        : [];
+      const branch = branches.find((b) => b.id === scopeBranchId);
       if (branch) {
-        hierarchy.push({ level: "cabang", id: branch.id, name: branch.name });
+        hierarchy.push({
+          level: "cabang",
+          id: String(branch.id),
+          name: String(branch.name),
+        });
       }
-
-      const { data: branchDojos } = await supabase
-        .from("Dojo")
-        .select("id, name, address")
-        .eq("branchId", branchId)
-        .eq("isDeleted", false)
-        .order("name");
-
-      const listed = toDojoSummaries(branchDojos);
+      const listed = toDojoSummaries(
+        ((data.data as Array<Record<string, unknown>>) ?? []).map(mapDojoRow),
+      );
       ({ allDojos, recentDojos } = splitDojoLists(listed));
-
-      const dojoIds = listed.map((d) => d.id);
-      const memberCount = await countMembersInDojos(dojoIds);
-
-      stats = {
-        provinces: 1,
-        branches: 1,
-        dojos: dojoIds.length,
-        members: memberCount,
-      };
-
-      if (scopeDojoId) {
-        const { data: dojo } = await supabase
-          .from("Dojo")
-          .select("id, name")
-          .eq("id", scopeDojoId)
-          .maybeSingle();
-        if (dojo) hierarchy.push({ level: "dojo", id: dojo.id, name: dojo.name });
-      }
     }
-  } else if (hierarchyLevel === "dojo" && scopeDojoId) {
-    const { data: dojo } = await supabase
-      .from("Dojo")
-      .select("id, name, address, branchId, Branch(id, name)")
-      .eq("id", scopeDojoId)
-      .maybeSingle();
-
-    if (dojo) {
-      const branchData = dojo.Branch as { id: string; name: string } | { id: string; name: string }[] | null;
-      const branch = Array.isArray(branchData) ? branchData[0] : branchData;
-      if (branch) hierarchy.push({ level: "cabang", id: branch.id, name: branch.name });
-      hierarchy.push({ level: "dojo", id: dojo.id, name: dojo.name });
-
-      const single = [{ id: dojo.id, name: dojo.name, address: dojo.address }];
-      allDojos = single;
-      recentDojos = single;
-      stats = {
-        provinces: 1,
-        branches: 1,
-        dojos: 1,
-        members: await countMembersInDojos([dojo.id]),
-      };
+  } else if (jatimProvince) {
+    const branches = (jatimProvince.branches as Array<Record<string, unknown>>) ?? [];
+    if (branches[0]) {
+      hierarchy.push({
+        level: "cabang",
+        id: String(branches[0].id),
+        name: String(branches[0].name),
+      });
     }
-  } else {
-    const dojoRaw = memberRecord?.Dojo as unknown;
-    const dojo = (Array.isArray(dojoRaw) ? dojoRaw[0] : dojoRaw) as {
-      id: string;
-      name: string;
-      address: string | null;
-      Branch?: { id: string; name: string } | { id: string; name: string }[];
-    } | null | undefined;
-
-    if (dojo) {
-      const branchData = dojo.Branch;
-      const branch = Array.isArray(branchData) ? branchData[0] : branchData;
-      if (branch) {
-        hierarchy.push({ level: "cabang", id: branch.id, name: branch.name });
-      } else if (portalProfile?.branch_name) {
-        hierarchy.push({
-          level: "cabang",
-          id: portalProfile.branch_id,
-          name: portalProfile.branch_name,
-        });
-      }
-
-      hierarchy.push({ level: "dojo", id: dojo.id, name: dojo.name });
-      const single = [{ id: dojo.id, name: dojo.name, address: dojo.address }];
-      allDojos = single;
-      recentDojos = single;
-      stats = {
-        provinces: 1,
-        branches: 1,
-        dojos: 1,
-        members: await countMembersInDojos([dojo.id]),
-      };
-    } else if (portalProfile) {
-      if (portalProfile.branch_name) {
-        hierarchy.push({
-          level: "cabang",
-          id: portalProfile.branch_id,
-          name: portalProfile.branch_name,
-        });
-      }
-      if (portalProfile.dojo_name) {
-        hierarchy.push({
-          level: "dojo",
-          id: portalProfile.dojo_id,
-          name: portalProfile.dojo_name,
-        });
-      }
+    const allBranchDojos: DojoSummary[] = [];
+    for (const branch of branches) {
+      const dojos = (branch.dojos as Array<Record<string, unknown>>) ?? [];
+      allBranchDojos.push(...dojos.map(mapDojoRow));
     }
+    allBranchDojos.sort((a, b) => a.name.localeCompare(b.name));
+    ({ allDojos, recentDojos } = splitDojoLists(allBranchDojos));
   }
 
   return {

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { randomBytes } from "crypto";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { inkaiFetch } from "@/lib/inkai-api/server";
 import { checkRateLimit, getClientIp } from "@/lib/auth/rate-limit";
 
 export async function POST(request: Request) {
@@ -20,43 +19,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email wajib diisi." }, { status: 400 });
     }
 
-    const supabase = createSupabaseAdminClient();
-    if (!supabase) {
-      return NextResponse.json({ error: "Server belum dikonfigurasi." }, { status: 500 });
-    }
-
-    const { data: user } = await supabase
-      .from("User")
-      .select("id, email")
-      .eq("email", email)
-      .eq("isDeleted", false)
-      .maybeSingle();
-
-    if (user) {
-      const token = randomBytes(32).toString("hex");
-      const expiry = new Date(Date.now() + 1000 * 60 * 60).toISOString();
-
-      await supabase
-        .from("User")
-        .update({ resetToken: token, resetTokenExpiry: expiry, updatedAt: new Date().toISOString() })
-        .eq("id", user.id);
-
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-      const resetUrl = `${baseUrl}/reset-password?token=${token}`;
-
-      if (process.env.NODE_ENV !== "production") {
-        return NextResponse.json({
-          ok: true,
-          message: "Link reset password dibuat (mode dev).",
-          resetUrl,
-        });
-      }
-    }
+    await inkaiFetch("/v1/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
 
     return NextResponse.json({
       ok: true,
-      message: "Jika email terdaftar, instruksi reset password telah dikirim.",
+      message: "Jika email terdaftar, instruksi reset telah dikirim.",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Permintaan gagal.";

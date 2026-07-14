@@ -1,31 +1,26 @@
 import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-
-import { getPortalSessionSecret, getSupabaseServiceRoleKey } from "@/lib/supabase/env";
+import { getInkaiApiBaseUrl } from "@/lib/inkai-api/server";
 
 export async function GET() {
-  const supabase = createSupabaseAdminClient();
-  const hasServiceRole = Boolean(getSupabaseServiceRoleKey());
-  const hasSessionSecret = Boolean(getPortalSessionSecret());
-
-  let dbOk = false;
-  if (supabase) {
-    const { error } = await supabase.from("Province").select("id", { count: "exact", head: true });
-    dbOk = !error;
-  }
-
-  const ok = hasServiceRole && hasSessionSecret && dbOk;
-
-  return NextResponse.json(
-    {
-      ok,
+  try {
+    const base = getInkaiApiBaseUrl();
+    const res = await fetch(`${base}/health/db`, { cache: "no-store" });
+    return NextResponse.json({
+      ok: res.ok,
       checks: {
-        serviceRole: hasServiceRole,
-        sessionSecret: hasSessionSecret,
-        database: dbOk,
+        api: true,
+        database: res.ok,
       },
       timestamp: new Date().toISOString(),
-    },
-    { status: ok ? 200 : 503 },
-  );
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        ok: false,
+        checks: { api: false, database: false },
+        timestamp: new Date().toISOString(),
+      },
+      { status: 503 },
+    );
+  }
 }

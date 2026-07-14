@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import { verifyPassword } from "@/lib/auth/password";
-import { buildSessionUser, findUserByEmail } from "@/lib/auth/rbac";
 import { checkRateLimit, getClientIp } from "@/lib/auth/rate-limit";
 import {
-  createSessionToken,
-  getSessionCookieOptions,
-  PORTAL_SESSION_COOKIE,
-} from "@/lib/auth/session";
+  getInkaiTokenCookieOptions,
+  INKAI_TOKEN_COOKIE,
+} from "@/lib/inkai-api/cookies";
+import { inkaiFetch, inkaiErrorMessage } from "@/lib/inkai-api/server";
 
 export async function POST(request: Request) {
   try {
@@ -27,31 +25,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email dan password wajib diisi." }, { status: 400 });
     }
 
-    const userResult = await findUserByEmail(email);
-    if (!userResult.ok) {
-      return NextResponse.json({ error: userResult.error }, { status: 401 });
+    const { res, data } = await inkaiFetch(
+      "/v1/auth/login",
+      { method: "POST", body: JSON.stringify({ identifier: email, password }) },
+      null,
+    );
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: inkaiErrorMessage(data, "Email atau password salah.") },
+        { status: 401 },
+      );
     }
 
-    const user = userResult.data;
-    if (!user.isActive) {
-      return NextResponse.json({ error: "Akun tidak aktif. Hubungi pengurus INKAI." }, { status: 403 });
-    }
-
-    const valid = await verifyPassword(password, user.passwordHash);
-    if (!valid) {
-      return NextResponse.json({ error: "Email atau password salah." }, { status: 401 });
-    }
-
-    const sessionUser = await buildSessionUser(user);
-    const token = await createSessionToken(sessionUser);
+    const token = typeof data.token === "string" ? data.token : "";
+    const userPayload = (data.data as { user?: Record<string, unknown> })?.user ?? {};
+    const memberStatus = (userPayload.status as string | undefined) ?? "Active";
 
     const response = NextResponse.json({
       ok: true,
-      user: sessionUser,
-      message: `Selamat datang${sessionUser.fullName ? `, ${sessionUser.fullName}` : ""}!`,
+      user: {
+        id: userPayload.id,
+        email: userPayload.email,
+        fullName: userPayload.fullName,
+        roles: userPayload.roles ?? [],
+        profileStatus:
+          memberStatus === "PENDING"
+            ? "pending"
+            : memberStatus === "REJECTED"
+              ? "rejected"
+              : "approved",
+      },
+      message: `Selamat datang${userPayload.fullName ? `, ${userPayload.fullName}` : ""}!`,
     });
 
-    response.cookies.set(PORTAL_SESSION_COOKIE, token, getSessionCookieOptions());
+    if (token) {
+      response.cookies.set(INKAI_TOKEN_COOKIE, token, getInkaiTokenCookieOptions());
+    }
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Login gagal.";

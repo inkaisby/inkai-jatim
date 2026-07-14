@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getDojosByBranchId } from "@/lib/portal/organization";
+import { inkaiFetch } from "@/lib/inkai-api/server";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const branchId = searchParams.get("branchId");
-
+  const branchId = new URL(request.url).searchParams.get("branchId")?.trim();
   if (!branchId) {
     return NextResponse.json({ error: "branchId wajib diisi." }, { status: 400 });
   }
 
-  const result = await getDojosByBranchId(branchId);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+  const { res, data } = await inkaiFetch(`/v1/org/dojos/${branchId}`, {}, null);
+  if (!res.ok) {
+    return NextResponse.json({ error: "Gagal memuat dojo" }, { status: res.status });
   }
 
-  return NextResponse.json({ data: result.data });
+  return NextResponse.json({ data: data.data ?? [] });
 }

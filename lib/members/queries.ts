@@ -1,5 +1,5 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getScopedDojoIds } from "@/lib/auth/permissions";
+import { getInkaiTokenFromCookies } from "@/lib/inkai-api/cookies";
+import { inkaiFetch } from "@/lib/inkai-api/server";
 import type { PortalSessionUser } from "@/lib/auth/types";
 
 export type MemberListItem = {
@@ -15,129 +15,70 @@ export type MemberListItem = {
   createdAt: string;
 };
 
+function mapMemberRow(row: Record<string, unknown>): MemberListItem {
+  const status = String(row.status ?? "");
+  return {
+    id: String(row.id),
+    userId: String(row.userId ?? ""),
+    fullName: String(row.fullName ?? ""),
+    email: (row.user as { email?: string } | undefined)?.email ?? null,
+    status,
+    profileStatus:
+      status === "PENDING" ? "pending" : status === "REJECTED" ? "rejected" : "approved",
+    dojoId: String(row.dojoId ?? ""),
+    dojoName: (row.dojo as { name?: string } | undefined)?.name ?? null,
+    branchName: (row.dojo as { branch?: { name?: string } } | undefined)?.branch?.name ?? null,
+    createdAt: String(row.createdAt ?? ""),
+  };
+}
+
 export async function listMembersInScope(
-  user: PortalSessionUser,
+  _user: PortalSessionUser,
   options: { status?: string; limit?: number } = {},
 ) {
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return { ok: false as const, error: "Supabase admin belum dikonfigurasi." };
+  const token = await getInkaiTokenFromCookies();
+  if (!token) return { ok: false as const, error: "Belum login." };
 
-  const dojoIds = await getScopedDojoIds(user);
-  if (dojoIds.length === 0) return { ok: true as const, data: [] as MemberListItem[] };
+  const qs = new URLSearchParams();
+  if (options.status) qs.set("status", options.status);
+  qs.set("limit", String(options.limit ?? 100));
 
-  let query = supabase
-    .from("Member")
-    .select(
-      "id, userId, fullName, status, dojoId, createdAt, Dojo(name, Branch(name)), User(email)",
-    )
-    .in("dojoId", dojoIds)
-    .eq("isDeleted", false)
-    .order("createdAt", { ascending: false })
-    .limit(options.limit ?? 100);
-
-  if (options.status) {
-    query = query.eq("status", options.status);
+  const { res, data } = await inkaiFetch(`/v1/members?${qs}`, {}, token);
+  if (!res.ok) {
+    return { ok: false as const, error: "Gagal memuat anggota dari API." };
   }
 
-  const { data, error } = await query;
-  if (error) return { ok: false as const, error: error.message };
-
-  const userIds = data?.map((m) => m.userId) ?? [];
-  const { data: profiles } = userIds.length
-    ? await supabase
-        .from("portal_member_profiles")
-        .select("user_id, status")
-        .in("user_id", userIds)
-    : { data: [] as { user_id: string; status: string }[] };
-
-  const profileMap = new Map(profiles?.map((p) => [p.user_id, p.status]) ?? []);
-
-  const items: MemberListItem[] =
-    data?.map((row) => {
-      const dojo = row.Dojo as
-        | { name: string; Branch?: { name: string } | { name: string }[] }
-        | { name: string; Branch?: { name: string } | { name: string }[] }[]
-        | null;
-      const dojoObj = Array.isArray(dojo) ? dojo[0] : dojo;
-      const branchData = dojoObj?.Branch;
-      const branch = Array.isArray(branchData) ? branchData[0] : branchData;
-      const userRow = row.User as { email: string } | { email: string }[] | null;
-      const email = Array.isArray(userRow) ? userRow[0]?.email : userRow?.email;
-
-      return {
-        id: row.id,
-        userId: row.userId,
-        fullName: row.fullName,
-        email: email ?? null,
-        status: row.status,
-        profileStatus: profileMap.get(row.userId) ?? null,
-        dojoId: row.dojoId,
-        dojoName: dojoObj?.name ?? null,
-        branchName: branch?.name ?? null,
-        createdAt: row.createdAt,
-      };
-    }) ?? [];
-
-  return { ok: true as const, data: items };
+  const rows = (data.data as Array<Record<string, unknown>>) ?? [];
+  return { ok: true as const, data: rows.map(mapMemberRow) };
 }
 
 export async function verifyMemberInScope(
-  user: PortalSessionUser,
+  _user: PortalSessionUser,
   memberId: string,
   action: "approve" | "reject",
 ) {
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return { ok: false as const, error: "Supabase admin belum dikonfigurasi." };
+  const token = await getInkaiTokenFromCookies();
+  if (!token) return { ok: false as const, error: "Belum login." };
 
-  const dojoIds = await getScopedDojoIds(user);
-  if (dojoIds.length === 0) return { ok: false as const, error: "Tidak ada cakupan dojo." };
+  const { res, data } = await inkaiFetch(
+    `/v1/members/${memberId}/registration`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ action }),
+    },
+    token,
+  );
 
-  const { data: member, error: memberError } = await supabase
-    .from("Member")
-    .select("id, userId, dojoId, fullName")
-    .eq("id", memberId)
-    .eq("isDeleted", false)
-    .maybeSingle();
-
-  if (memberError || !member) return { ok: false as const, error: "Anggota tidak ditemukan." };
-  if (!dojoIds.includes(member.dojoId)) {
-    return { ok: false as const, error: "Forbidden: anggota di luar cakupan wilayah Anda." };
+  if (!res.ok) {
+    const message =
+      typeof data.message === "string"
+        ? data.message
+        : typeof data.error === "string"
+          ? data.error
+          : "Gagal memverifikasi anggota.";
+    return { ok: false as const, error: message };
   }
 
-  const memberStatus = action === "approve" ? "Active" : "Rejected";
   const profileStatus = action === "approve" ? "approved" : "rejected";
-  const now = new Date().toISOString();
-
-  const { error: updateMemberError } = await supabase
-    .from("Member")
-    .update({ status: memberStatus, updatedAt: now })
-    .eq("id", memberId);
-
-  if (updateMemberError) return { ok: false as const, error: updateMemberError.message };
-
-  const { data: existingProfile } = await supabase
-    .from("portal_member_profiles")
-    .select("id, full_name")
-    .eq("user_id", member.userId)
-    .maybeSingle();
-
-  if (existingProfile) {
-    const { error: profileError } = await supabase
-      .from("portal_member_profiles")
-      .update({ status: profileStatus, updated_at: now })
-      .eq("user_id", member.userId);
-
-    if (profileError) return { ok: false as const, error: profileError.message };
-  } else {
-    const { error: profileError } = await supabase.from("portal_member_profiles").insert({
-      user_id: member.userId,
-      member_id: member.id,
-      full_name: member.fullName,
-      status: profileStatus,
-    });
-
-    if (profileError) return { ok: false as const, error: profileError.message };
-  }
-
   return { ok: true as const, status: profileStatus };
 }

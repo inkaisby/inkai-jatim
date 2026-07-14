@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireMemberVerifier } from "@/lib/auth/guard";
-import { verifyMemberInScope } from "@/lib/members/queries";
+import { inkaiFetch, inkaiErrorMessage } from "@/lib/inkai-api/server";
 
 export async function PATCH(
   request: Request,
@@ -9,6 +9,11 @@ export async function PATCH(
   const auth = await requireMemberVerifier();
   if (!auth.ok) return auth.response;
 
+  const token = auth.ctx.token;
+  if (!token) {
+    return NextResponse.json({ error: "Token tidak tersedia" }, { status: 401 });
+  }
+
   const { id } = await context.params;
   const body = (await request.json()) as { action?: "approve" | "reject" };
 
@@ -16,11 +21,30 @@ export async function PATCH(
     return NextResponse.json({ error: "action harus approve atau reject." }, { status: 400 });
   }
 
-  const result = await verifyMemberInScope(auth.ctx.user, id, body.action);
-  if (!result.ok) {
-    const status = result.error.includes("Forbidden") ? 403 : 400;
-    return NextResponse.json({ error: result.error }, { status });
+  const { res, data } = await inkaiFetch(
+    `/v1/members/${id}/registration`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ action: body.action }),
+    },
+    token,
+  );
+
+  if (!res.ok) {
+    const status = res.status === 403 ? 403 : 400;
+    return NextResponse.json(
+      { error: inkaiErrorMessage(data, "Gagal memverifikasi anggota") },
+      { status },
+    );
   }
 
-  return NextResponse.json({ ok: true, status: result.status });
+  const payload = data.data as { status?: string } | undefined;
+  const profileStatus =
+    payload?.status === "Active"
+      ? "approved"
+      : payload?.status === "REJECTED"
+        ? "rejected"
+        : "pending";
+
+  return NextResponse.json({ ok: true, status: profileStatus });
 }
