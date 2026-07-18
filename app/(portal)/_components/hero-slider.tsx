@@ -47,8 +47,8 @@ const SLIDES: Slide[] = [
     description: "Dengan lebih dari 50 Dojo resmi yang tersebar di Jawa Timur, Anda bisa memulai perjalanan disiplin beladiri karate bersama sabuk hitam berpengalaman.",
     ctaText: "Cari Dojo",
     ctaHref: "/dojo",
-    secondaryCtaText: "Unduh Dokumen",
-    secondaryCtaHref: "/dokumen",
+    secondaryCtaText: "Lihat Profil",
+    secondaryCtaHref: "/profil",
     accentIcon: "users",
   },
 ];

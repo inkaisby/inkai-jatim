@@ -11,7 +11,6 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         { href: "/berita", label: "Berita" },
         { href: "/agenda", label: "Agenda" },
         { href: "/dojo", label: "Dojo" },
-        { href: "/dokumen", label: "Dokumen" },
       ]}
       NavLinkComponent={NavLink}
     >

@@ -40,15 +40,3 @@ export type PortalDojo = {
   created_at: string;
 };
 
-export type PortalDocument = {
-  id: string;
-  title: string;
-  slug: string | null;
-  file_path: string;
-  version_label: string | null;
-  status: PortalStatus;
-  visibility: PortalVisibility;
-  published_at: string | null;
-  created_at: string;
-};
-

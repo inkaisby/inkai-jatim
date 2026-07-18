@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Breadcrumbs } from "../_components/breadcrumbs";
 import { ProfileTabs, PROFILE_SECTIONS } from "../_components/profile-tabs";
+import { StrukturOrganisasi } from "../_components/struktur-organisasi";
 
 export const dynamic = "force-static";
 
@@ -18,6 +19,15 @@ export default function ProfilPage() {
     if (initialHash && PROFILE_SECTIONS.some((s) => s.id === initialHash)) {
       setActive(initialHash as SectionId);
     }
+
+    const onHashChange = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (hash && PROFILE_SECTIONS.some((s) => s.id === hash)) {
+        setActive(hash as SectionId);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   const handleChange = (id: SectionId) => {
@@ -43,82 +53,81 @@ export default function ProfilPage() {
           <div className="prose prose-sm max-w-none dark:prose-invert">
             {active === "sejarah-inkai" && (
               <>
-                  <div className="mb-4 text-center">
-                    <h1 className="mb-2 text-xl font-semibold md:text-2xl">
-                      Sejarah Berdirinya INKAI
-                    </h1>
-                    <button
-                      type="button"
-                      onClick={() => setShowVideo(true)}
-                      className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2 text-xs font-semibold shadow-sm hover:bg-muted"
-                    >
-                      <span>▶</span>
-                      <span>Tonton Versi Video</span>
-                    </button>
-                  </div>
+                <div className="mb-4 text-center">
+                  <h1 className="mb-2 text-xl font-semibold md:text-2xl">
+                    Sejarah Berdirinya INKAI
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={() => setShowVideo(true)}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2 text-xs font-semibold shadow-sm hover:bg-muted"
+                  >
+                    <span>▶</span>
+                    <span>Tonton Versi Video</span>
+                  </button>
+                </div>
 
-                  <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-muted">
-                    <img
-                      src="/images/sejarah-berdirinya-inkai.png"
-                      alt="Foto sejarah berdirinya INKAI"
-                      className="h-auto w-full object-cover"
-                    />
-                  </div>
+                <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/sejarah-berdirinya-inkai.png"
+                    alt="Foto sejarah berdirinya INKAI"
+                    className="h-auto w-full object-cover"
+                  />
+                </div>
 
-                  <p className="mb-4 text-justify">
-                    Berdirinya INKAI berawal dari rapat yang dilaksanakan di
-                    Jalan Matraman Dalam I No. 1 – Jakarta Pusat pada tanggal 15
-                    April 1971 yang akhirnya diputuskan mendirikan Perguruan
-                    INKAI.
-                  </p>
+                <p className="mb-4 text-justify">
+                  Berdirinya INKAI berawal dari rapat yang dilaksanakan di Jalan
+                  Matraman Dalam I No. 1 – Jakarta Pusat pada tanggal 15 April
+                  1971 yang akhirnya diputuskan mendirikan Perguruan INKAI.
+                </p>
 
-                  <p className="mb-4 text-justify">
-                    Dalam rapat yang berlangsung dari mulai pukul 09.00 hingga
-                    18.00 WIB tersebut dihadiri oleh beberapa karateka eks PORKI
-                    (Persatuan Olah Raga Karate Indonesia) seperti, Sabet
-                    Muchsin, Nico A. Lumenta (Tuan Rumah), Abdul Latief, Sori
-                    Tua Hutagalung (alm.), Albert L. Tobing (alm.), Wono
-                    Sarono, A.Sy. Siregar (alm) dan salah satu karateka INKAI
-                    sebagai pembuat dan menggambar lambang INKAI bernama
-                    Harsono Rubio (alm). Dalam rapat tersebut disetujui bahwa
-                    sebagai Ketua Umum INKAI Pusat pertama adalah Letnan Jendral
-                    G.H. Mantik dan sebagai ketua Dewan Guru INKAI Pertama
-                    adalah Sabet Muchsin.
-                  </p>
+                <p className="mb-4 text-justify">
+                  Dalam rapat yang berlangsung dari mulai pukul 09.00 hingga
+                  18.00 WIB tersebut dihadiri oleh beberapa karateka eks PORKI
+                  (Persatuan Olah Raga Karate Indonesia) seperti, Sabet Muchsin,
+                  Nico A. Lumenta (Tuan Rumah), Abdul Latief, Sori Tua Hutagalung
+                  (alm.), Albert L. Tobing (alm.), Wono Sarono, A.Sy. Siregar
+                  (alm) dan salah satu karateka INKAI sebagai pembuat dan
+                  menggambar lambang INKAI bernama Harsono Rubio (alm). Dalam
+                  rapat tersebut disetujui bahwa sebagai Ketua Umum INKAI Pusat
+                  pertama adalah Letnan Jendral G.H. Mantik dan sebagai ketua
+                  Dewan Guru INKAI Pertama adalah Sabet Muchsin.
+                </p>
 
-                  <p className="mb-4 text-justify">
-                    Dalam rapat tersebut, juga dibahas tentang lambang INKAI
-                    yang digambar oleh Harsono. Harsono Rubio yang kemudian
-                    dikoreksi dan dikritisi oleh tujuh orang anggota dewan guru
-                    INKAI tersebut. Belakangan Harsono Rubio menyatakan bahwa
-                    lambang INKAI memang dibuat dan digambar oleh beliau, tetapi
-                    beliau mengatakan tidak akan mengklaim bahwa beliau yang
-                    menggambar lambang INKAI tersebut, melainkan adalah hasil
-                    pembahasan bersama antara anggota rapat yang hadir dengan
-                    memberikan makna bahwa INKAI adalah milik bersama. Dalam
-                    perjalanan sejarahnya INKAI telah banyak melalui rintangan
-                    dan cobaan, namun itu tidak membuat INKAI sebagai perguruan
-                    karate tidak patah arang, pada perjalanan sejarahnya INKAI
-                    telah banyak mencetak karateka–karateka yang mengharumkan
-                    nama Indonesia melalui prestasi mereka, baik di tingkat
-                    nasional maupun internasional – juara – juara dunia karate.
-                  </p>
+                <p className="mb-4 text-justify">
+                  Dalam rapat tersebut, juga dibahas tentang lambang INKAI yang
+                  digambar oleh Harsono. Harsono Rubio yang kemudian dikoreksi
+                  dan dikritisi oleh tujuh orang anggota dewan guru INKAI
+                  tersebut. Belakangan Harsono Rubio menyatakan bahwa lambang
+                  INKAI memang dibuat dan digambar oleh beliau, tetapi beliau
+                  mengatakan tidak akan mengklaim bahwa beliau yang menggambar
+                  lambang INKAI tersebut, melainkan adalah hasil pembahasan
+                  bersama antara anggota rapat yang hadir dengan memberikan makna
+                  bahwa INKAI adalah milik bersama. Dalam perjalanan sejarahnya
+                  INKAI telah banyak melalui rintangan dan cobaan, namun itu
+                  tidak membuat INKAI sebagai perguruan karate tidak patah arang,
+                  pada perjalanan sejarahnya INKAI telah banyak mencetak
+                  karateka–karateka yang mengharumkan nama Indonesia melalui
+                  prestasi mereka, baik di tingkat nasional maupun internasional
+                  – juara – juara dunia karate.
+                </p>
 
-                  <p className="mb-4 text-justify">
-                    Tanggal 25 Mei 1971, INKAI resmi berdiri sebagai perguruan
-                    anggota FORKI dan oleh PB FORKI, INKAI ditunjuk mewakili
-                    Indonesia mengikuti kejuaraan karate WUKO 1 di Jepang. Dalam
-                    perjalanannya, perkembangan INKAI di Indonesia mengalami
-                    perkembangan yang begitu pesat ini terbukti bahwa di setiap
-                    pelosok tanah air terdapat Cabang–cabang dan Ranting–Ranting
-                    Perguruan INKAI. Saat ini INKAI berada di 34 Provinsi di
-                    seluruh Tanah Air, dengan jumlah karateka penyandang Sabuk
-                    Hitam mencapai lebih dari 22.000 orang dan nomor keanggotaan
-                    tingkatan KYU (sabuk putih s.d coklat) mencapai 2 juta orang
-                    yang mana terdiri dari kalangan Pelajar, Mahasiswa,
-                    TNI/POLRI, ASN, Perbankan, BUMN, BUMD, Swasta serta
-                    Affiliasi Pemerintah Daerah dan lain sebagainya.
-                  </p>
+                <p className="mb-4 text-justify">
+                  Tanggal 25 Mei 1971, INKAI resmi berdiri sebagai perguruan
+                  anggota FORKI dan oleh PB FORKI, INKAI ditunjuk mewakili
+                  Indonesia mengikuti kejuaraan karate WUKO 1 di Jepang. Dalam
+                  perjalanannya, perkembangan INKAI di Indonesia mengalami
+                  perkembangan yang begitu pesat ini terbukti bahwa di setiap
+                  pelosok tanah air terdapat Cabang–cabang dan Ranting–Ranting
+                  Perguruan INKAI. Saat ini INKAI berada di 34 Provinsi di
+                  seluruh Tanah Air, dengan jumlah karateka penyandang Sabuk
+                  Hitam mencapai lebih dari 22.000 orang dan nomor keanggotaan
+                  tingkatan KYU (sabuk putih s.d coklat) mencapai 2 juta orang
+                  yang mana terdiri dari kalangan Pelajar, Mahasiswa, TNI/POLRI,
+                  ASN, Perbankan, BUMN, BUMD, Swasta serta Affiliasi Pemerintah
+                  Daerah dan lain sebagainya.
+                </p>
               </>
             )}
 
@@ -149,6 +158,7 @@ export default function ProfilPage() {
               <div className="space-y-8">
                 <div className="text-center">
                   <div className="mb-6 flex justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/images/logo-inkai.png"
                       alt="Logo resmi INKAI"
@@ -162,6 +172,7 @@ export default function ProfilPage() {
 
                 <div className="flex justify-center">
                   <div className="overflow-hidden rounded-2xl border border-border bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/images/makna-lambang-inkai.png"
                       alt="Penjelasan makna lambang INKAI"
@@ -189,24 +200,7 @@ export default function ProfilPage() {
               </div>
             )}
 
-            {active === "struktur-organisasi" && (
-              <>
-                <h2>Struktur Organisasi</h2>
-                <p>
-                  Struktur organisasi INKAI tersusun dari Pengurus Pusat,
-                  pengurus provinsi, pengurus cabang/kabupaten-kota, hingga
-                  unit-unit dojo di lapangan. Setiap level memiliki peran dalam
-                  pembinaan, administrasi, dan koordinasi kegiatan, sehingga
-                  jalur komunikasi dan pembinaan dapat berjalan efektif.
-                </p>
-                <p>
-                  Di Jawa Timur, struktur organisasi mengikuti garis besar
-                  tersebut, dengan pengurus provinsi yang membina dan
-                  mengoordinasikan cabang dan dojo-dojo anggota di seluruh
-                  wilayah Jatim.
-                </p>
-              </>
-            )}
+            {active === "struktur-organisasi" && <StrukturOrganisasi />}
 
             {active === "visi-misi" && (
               <>
@@ -241,4 +235,3 @@ export default function ProfilPage() {
     </main>
   );
 }
-

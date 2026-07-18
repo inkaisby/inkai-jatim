@@ -1,6 +1,5 @@
 import type {
   PortalDojo,
-  PortalDocument,
   PortalEvent,
   PortalPost,
 } from "./types";
@@ -199,27 +198,6 @@ export async function getDojoBySlug(slug: string) {
 
     if (error) throw new Error(error.message);
     return (data ?? null) as PortalDojo | null;
-  });
-}
-
-export async function getDocuments(limit = 50) {
-  const env = getSupabaseEnv();
-  if (!env.ok) return missingEnvResult();
-  const supabase = createSupabaseServerClient();
-  if (!supabase) return missingEnvResult();
-  return safeQuery(async () => {
-    const { data, error } = await supabase
-      .from("portal_documents")
-      .select(
-        "id,title,slug,file_path,version_label,status,visibility,published_at,created_at",
-      )
-      .eq("status", "published")
-      .eq("visibility", "public")
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .limit(limit);
-
-    if (error) throw new Error(error.message);
-    return (data ?? []) as PortalDocument[];
   });
 }
 
