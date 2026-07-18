@@ -56,7 +56,7 @@ export function DashboardHomeView() {
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard title="Cabang" value={context.stats.branches} icon={MapPin} />
         <StatCard title="Dojo/Ranting" value={context.stats.dojos} icon={Building2} />
         <StatCard title="Anggota" value={context.stats.members} icon={Users} />
@@ -64,6 +64,11 @@ export function DashboardHomeView() {
           title="Pending Verifikasi"
           value={context.stats.pendingVerifications}
           icon={AlertCircle}
+        />
+        <StatCard
+          title="Iuran Lunas (Rp)"
+          value={Number(context.stats.iuranTotal || 0).toLocaleString("id-ID")}
+          icon={Landmark}
         />
       </section>
 

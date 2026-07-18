@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   ExternalLink,
@@ -23,11 +23,13 @@ function NavGroupBlock({
   pathname,
   collapsed,
   onNavigate,
+  badges,
 }: {
   item: Extract<NavItem, { children: unknown }>;
   pathname: string;
   collapsed: boolean;
   onNavigate?: () => void;
+  badges: Record<string, number>;
 }) {
   const childActive = item.children.some((c) => isActivePath(pathname, c.href));
   const [open, setOpen] = useState(childActive);
@@ -49,6 +51,7 @@ function NavGroupBlock({
       {(collapsed || open) &&
         item.children.map((child) => {
           const active = isActivePath(pathname, child.href);
+          const badge = badges[child.href] || 0;
           return (
             <Link
               key={child.href}
@@ -61,7 +64,16 @@ function NavGroupBlock({
                   : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               }`}
             >
-              {!collapsed && <span className="truncate">{child.label}</span>}
+              {!collapsed && (
+                <>
+                  <span className="truncate">{child.label}</span>
+                  {badge > 0 && (
+                    <span className="ml-auto rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                </>
+              )}
               {collapsed && (
                 <span className="mx-auto text-[10px] font-bold">
                   {child.label.slice(0, 2).toUpperCase()}
@@ -87,6 +99,40 @@ export function DashboardSidebar({
 }) {
   const pathname = usePathname();
   const items = useMemo(() => getAdminNavLinks(user.roles), [user.roles]);
+  const [badges, setBadges] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBadges() {
+      try {
+        const [notifRes, verRes] = await Promise.all([
+          fetch("/api/admin/notifications"),
+          fetch("/api/admin/verifications"),
+        ]);
+        const notifJson = (await notifRes.json()) as {
+          data?: Array<{ isRead?: boolean }>;
+        };
+        const verJson = (await verRes.json()) as { data?: unknown[] };
+        const unread = Array.isArray(notifJson.data)
+          ? notifJson.data.filter((n) => !n.isRead).length
+          : 0;
+        const pending = Array.isArray(verJson.data) ? verJson.data.length : 0;
+        if (!cancelled) {
+          setBadges({
+            "/admin/notifikasi": unread,
+            "/admin/pesan": unread,
+            "/admin/verifikasi": pending,
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    void loadBadges();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   return (
     <aside
@@ -124,6 +170,7 @@ export function DashboardSidebar({
                 pathname={pathname}
                 collapsed={collapsed}
                 onNavigate={onNavigate}
+                badges={badges}
               />
             );
           }

@@ -85,20 +85,20 @@ Sistem **inkai-jatim** adalah portal resmi **Pengurus Provinsi Jawa Timur** yang
 | Modul | Route | Status | Fungsi |
 |-------|-------|--------|--------|
 | Beranda Admin | `/admin` | Aktif | KPI + menu eksekutif (selaras sby) |
-| Kelola Anggota | `/admin/anggota` | Aktif | Cari/filter/export/verifikasi registrasi |
-| Verifikasi | `/admin/verifikasi` | Aktif | Antrian klaim Inkai API |
+| Kelola Anggota | `/admin/anggota` | Aktif | Cari/filter/export/verifikasi/NIA/bulk/create/nonaktif |
+| Verifikasi | `/admin/verifikasi` | Aktif | Antrian klaim Inkai API + badge |
 | Organisasi | `/admin/organisasi` | Aktif | Dojo/ranting + filter cabang |
-| Iuran Anggota | `/admin/iuran` | Aktif | Daftar + verifikasi pembayaran |
-| UKT | `/admin/ukt` | Aktif | Oversight event UKT |
-| Event & Kegiatan | `/admin/kegiatan` | Aktif | Daftar event |
-| Absensi | `/admin/absensi` | Aktif | Log kehadiran scoped |
-| Materi Digital | `/admin/materi` | Placeholder | Menu siap; upload menunggu endpoint |
+| Iuran Anggota | `/admin/iuran` | Aktif | Generate bulan, edit nominal, lunas/tolak, CSV |
+| UKT | `/admin/ukt` | Aktif | Buat periode semester, daftar peserta, export |
+| Event & Kegiatan | `/admin/kegiatan` | Aktif | Buat/tutup event |
+| Absensi | `/admin/absensi` | Aktif | Harian, belum hadir, rekap %, CSV |
+| Materi Digital | `/admin/materi` | Aktif | CRUD via AppSetting `digital-materials-jatim` |
 | Store | `/admin/store` | Aktif | Katalog `/v1/inventory` |
-| Pesan | `/admin/pesan` | Aktif | Inbox chat + tab broadcast |
+| Pesan | `/admin/pesan` | Aktif | Inbox + broadcast + badge unread |
 | Carousel Beranda | `/admin/carousel` | Aktif | CRUD slide beranda |
-| Notifikasi | `/admin/notifikasi` | Aktif | Inbox notifikasi admin |
+| Notifikasi | `/admin/notifikasi` | Aktif | Inbox + badge unread |
 | Log Audit | `/admin/audit` | Aktif | Log + export CSV |
-| Pengaturan | `/admin/pengaturan/*` | Aktif | Hub + user/cabang/ranting/kebijakan/peran/geofencing/akun |
+| Pengaturan | `/admin/pengaturan/*` | Aktif | Hub + create cabang + geofence + peran API |
 
 **Sidebar:** struktur grup **identik inkai-sby** (`lib/admin-nav.ts`): Keanggotaan / Keuangan & UKT / Kegiatan & Absensi / Konten & Layanan / Sistem. Filter `ADMIN_DOJO` sama pola sby.
 
@@ -107,26 +107,32 @@ Sistem **inkai-jatim** adalah portal resmi **Pengurus Provinsi Jawa Timur** yang
 ### 5.1 API proxy admin (lokal → backend)
 
 ```
-/api/members                     → GET /v1/members
-/api/members/[id]/verify        → PATCH /v1/members/:id/registration
+/api/members*                    → /v1/members*
+/api/admin/members*              → create / NIA / activate / bulk
 /api/admin/verifications*        → /v1/verifications*
-/api/admin/events                → /v1/events
-/api/admin/billing*              → /v1/billing*
-/api/admin/attendance            → /v1/attendance
+/api/admin/events*               → /v1/events* (+ create/close)
+/api/admin/billing*              → /v1/billing* (+ generate / patch)
+/api/admin/ukt*                  → /v1/events UKT + registrations
+/api/admin/attendance*           → /v1/attendance (+ rekap)
+/api/admin/materials*            → AppSetting digital-materials-jatim
 /api/admin/store*                → /v1/inventory*
 /api/admin/carousel*             → /v1/news-carousel*
+/api/admin/dojos/[id]            → PATCH /v1/dojos/:id (geofence)
+/api/admin/branches              → POST /v1/branches
+/api/admin/roles*                → /v1/roles*
 /api/admin/audit                 → /v1/audit-logs
 /api/admin/notifications         → /v1/notifications/my
 /api/admin/pesan                 → /v1/chat/conversations
 /api/admin/broadcast             → /v1/notifications/broadcast
 ```
 
-### 5.2 Perbedaan vs inkai-sby (sengaja / sementara)
+### 5.2 Sisa perbedaan vs inkai-sby (opsional)
 
-- Scope data: **Provinsi Jawa Timur**, bukan Cabang Surabaya
-- Materi digital: menu ada, upload penuh menunggu endpoint materi khusus
-- Kedalaman UKT/iuran/absensi: oversight via API (belum seluruh alur nota/gate sby)
-- Pengaturan user multi-akun: fondasi UI; CRUD penuh menyusul API wilayah-accounts
+- UKT: belum gate iuran/absensi 75%, nota cetak, waiver UI penuh seperti sby
+- Anggota: arsip soft-delete metadata lokal Prisma sby belum di-port (DELETE API pusat saja)
+- Materi: URL + settings (bukan Vercel Blob lokal sby)
+- Chat pesan: belum UI balas thread penuh (inbox + broadcast sudah)
+- Domain `inkai-admin.vercel.app` masih 404
 
 ---
 
@@ -323,6 +329,7 @@ Prioritas pengembangan lanjutan:
 | 18 Juli 2026 | Inventaris awal `inkai-jatim`: posisi Pengprov, publik, admin `/admin` (ex-`/dashboard`), RBAC, API, celah vs `inkai-sby`, rule agent |
 | 18 Juli 2026 | Paket komplit Pengprov: Cabang, Dojo filter, Anggota search/export, Verifikasi klaim, Kegiatan, Broadcast; proxy API ke inkai-backend; patch backend stats scope + filter `branchId` + CORS `inkai-admin` |
 | 18 Juli 2026 | Samakan sidebar & modul admin dengan `inkai-sby` (Keanggotaan/Keuangan/Kegiatan/Konten/Sistem + pengaturan hub); halaman iuran/ukt/absensi/store/pesan/carousel/notifikasi/audit |
+| 18 Juli 2026 | Paket kedalaman penuh: anggota lifecycle+bulk+NIA+create; iuran generate/edit/lunas; UKT periode+peserta; kegiatan create; absensi harian/belum/rekap; materi settings; geofence edit; cabang create; peran API; badge unread; backend dojo lat/lng |
 
 ---
 

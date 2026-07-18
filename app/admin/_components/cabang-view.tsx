@@ -2,13 +2,24 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useDashboardData } from "./dashboard-data-context";
 import { HierarchyBanner } from "./hierarchy-banner";
 import { MapPin, Search, Building2, Users, ArrowRight } from "lucide-react";
 
 export function CabangView() {
+  const router = useRouter();
   const context = useDashboardData();
   const [query, setQuery] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState("");
+  const [headName, setHeadName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const provinceId =
+    context.hierarchy.find((h) => h.level === "provinsi")?.id ?? null;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -16,19 +27,100 @@ export function CabangView() {
     return context.branches.filter((b) => b.name.toLowerCase().includes(q));
   }, [context.branches, query]);
 
+  async function createBranch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!provinceId || !name.trim() || !adminEmail.trim()) {
+      setMessage("Nama cabang dan email admin wajib. Provinsi harus terdeteksi.");
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/org/branches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          headName: headName.trim() || undefined,
+          provinceId,
+          adminEmail: adminEmail.trim(),
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setMessage(json.error ?? "Gagal mendaftarkan cabang.");
+        return;
+      }
+      setShowAdd(false);
+      setName("");
+      setHeadName("");
+      setAdminEmail("");
+      setMessage("Cabang didaftarkan.");
+      router.refresh();
+    } catch {
+      setMessage("Gagal mendaftarkan cabang.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <section>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          Organisasi Provinsi
-        </p>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">Daftar Cabang</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Pantau seluruh Pengcab se-Jawa Timur: jumlah dojo dan anggota per kota/kabupaten.
-        </p>
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            Organisasi Provinsi
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">
+            Pengaturan Cabang
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pantau dan daftarkan Pengcab se-Jawa Timur.
+          </p>
+        </div>
+        <button type="button" onClick={() => setShowAdd((v) => !v)} className="btn-outline text-xs">
+          {showAdd ? "Tutup form" : "+ Daftarkan Pengcab"}
+        </button>
       </section>
 
       <HierarchyBanner hierarchy={context.hierarchy} />
+
+      {showAdd && (
+        <form onSubmit={createBranch} className="glass-card grid gap-3 p-5 md:grid-cols-2">
+          <input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nama cabang (kota/kab)"
+            className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm"
+          />
+          <input
+            value={headName}
+            onChange={(e) => setHeadName(e.target.value)}
+            placeholder="Nama ketua cabang"
+            className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm"
+          />
+          <input
+            required
+            type="email"
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
+            placeholder="Email admin cabang"
+            className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm md:col-span-2"
+          />
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-outline text-xs md:col-span-2 disabled:opacity-50"
+          >
+            Simpan & aktifkan Pengcab
+          </button>
+        </form>
+      )}
+
+      {message && (
+        <p className="rounded-xl border border-border/70 bg-muted/40 px-4 py-3 text-sm">{message}</p>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-md flex-1">

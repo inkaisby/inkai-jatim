@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarDays, RefreshCw } from "lucide-react";
+import { useDashboardData } from "./dashboard-data-context";
+import { AdminEmptyState, AdminMessage, AdminPageHeader } from "./admin-ui";
 
 type EventItem = {
   id: string;
@@ -12,13 +13,19 @@ type EventItem = {
   endDate?: string | null;
   location?: string | null;
   status?: string | null;
-  type?: string | null;
 };
 
 export function KegiatanView() {
+  const context = useDashboardData();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+  const [branchId, setBranchId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -31,7 +38,7 @@ export function KegiatanView() {
         setEvents([]);
         return;
       }
-      setEvents(json.data ?? []);
+      setEvents(Array.isArray(json.data) ? json.data : []);
     } catch {
       setMessage("Gagal memuat kegiatan.");
       setEvents([]);
@@ -44,75 +51,154 @@ export function KegiatanView() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!branchId && context.branches[0]?.id) setBranchId(context.branches[0].id);
+  }, [branchId, context.branches]);
+
+  async function createEvent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim() || !branchId || !startDate || !endDate) {
+      setMessage("Judul, cabang, dan tanggal wajib.");
+      return;
+    }
+    const res = await fetch("/api/admin/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        location: location.trim() || undefined,
+        branchId,
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        registrationCloseAt: new Date(startDate).toISOString(),
+        categories: [{ name: "Umum", fee: 0 }],
+      }),
+    });
+    const json = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      setMessage(json.error ?? "Gagal membuat event.");
+      return;
+    }
+    setTitle("");
+    setDescription("");
+    setLocation("");
+    setMessage("Event dibuat.");
+    await load();
+  }
+
+  async function closeEvent(id: string) {
+    const res = await fetch(`/api/admin/events/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "CLOSED" }),
+    });
+    const json = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      setMessage(json.error ?? "Gagal menutup event.");
+      return;
+    }
+    await load();
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-            Kegiatan Provinsi
-          </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">Kegiatan & Event</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Daftar kegiatan dari Inkai API (`/v1/events`) untuk oversight Pengprov.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+      <AdminPageHeader
+        eyebrow="Kegiatan & Absensi"
+        title="Event & Kegiatan"
+        description="Buat dan kelola kegiatan non-UKT tingkat Provinsi/Cabang."
+        onRefresh={() => void load()}
+        refreshing={loading}
+      />
+
+      <form onSubmit={createEvent} className="glass-card grid gap-3 p-5 md:grid-cols-2">
+        <input
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Judul kegiatan"
+          className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm md:col-span-2"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Deskripsi"
+          rows={2}
+          className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm md:col-span-2"
+        />
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Lokasi"
+          className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm"
+        />
+        <select
+          required
+          value={branchId}
+          onChange={(e) => setBranchId(e.target.value)}
+          className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          Muat ulang
+          {context.branches.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <input
+          required
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm"
+        />
+        <input
+          required
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm"
+        />
+        <button type="submit" className="btn-outline text-xs md:col-span-2">
+          Buat kegiatan
         </button>
-      </section>
+      </form>
 
-      {message && (
-        <p className="rounded-xl border border-border/70 bg-muted/40 px-4 py-3 text-sm">{message}</p>
+      {message && <AdminMessage text={message} />}
+
+      {loading && events.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Memuat kegiatan...</p>
+      ) : events.length === 0 ? (
+        <AdminEmptyState message="Belum ada kegiatan." />
+      ) : (
+        <div className="space-y-3">
+          {events.map((event) => (
+            <article key={event.id} className="glass-card flex items-start justify-between gap-4 p-5">
+              <div>
+                <h2 className="text-base font-semibold">{event.title || event.name}</h2>
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                  {event.description || "Tanpa deskripsi"}
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {[
+                    event.location,
+                    event.startDate ? new Date(event.startDate).toLocaleDateString("id-ID") : null,
+                    event.status,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void closeEvent(event.id)}
+                className="rounded-lg border border-border/70 px-3 py-1.5 text-xs font-semibold"
+              >
+                Tutup
+              </button>
+            </article>
+          ))}
+        </div>
       )}
-
-      <section className="space-y-3">
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Memuat kegiatan...</p>
-        ) : events.length === 0 ? (
-          <div className="glass-card flex flex-col items-center gap-3 px-4 py-12 text-center">
-            <CalendarDays className="h-8 w-8 text-accent/70" />
-            <p className="text-sm text-muted-foreground">Belum ada kegiatan yang ditampilkan.</p>
-          </div>
-        ) : (
-          events.map((event) => {
-            const title = event.title || event.name || "Kegiatan";
-            return (
-              <article key={event.id} className="glass-card p-5">
-                <div className="flex items-start gap-3">
-                  <span className="inline-flex rounded-xl bg-accent/10 p-2 text-accent">
-                    <CalendarDays className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <h2 className="text-base font-semibold">{title}</h2>
-                    {event.description && (
-                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                        {event.description}
-                      </p>
-                    )}
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {[
-                        event.location,
-                        event.startDate
-                          ? new Date(event.startDate).toLocaleDateString("id-ID")
-                          : null,
-                        event.type,
-                        event.status,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            );
-          })
-        )}
-      </section>
     </div>
   );
 }
