@@ -5,6 +5,6 @@ export const metadata: Metadata = {
   title: "Profil Akun",
 };
 
-export default function DashboardProfilPage() {
+export default function AdminProfilPage() {
   return <ProfilView />;
 }

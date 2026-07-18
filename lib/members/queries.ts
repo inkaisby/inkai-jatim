@@ -7,6 +7,8 @@ export type MemberListItem = {
   userId: string;
   fullName: string;
   email: string | null;
+  nia: string | null;
+  currentRank: string | null;
   status: string;
   profileStatus: string | null;
   dojoId: string;
@@ -22,6 +24,8 @@ function mapMemberRow(row: Record<string, unknown>): MemberListItem {
     userId: String(row.userId ?? ""),
     fullName: String(row.fullName ?? ""),
     email: (row.user as { email?: string } | undefined)?.email ?? null,
+    nia: (row.nia as string | null) ?? null,
+    currentRank: (row.currentRank as string | null) ?? null,
     status,
     profileStatus:
       status === "PENDING" ? "pending" : status === "REJECTED" ? "rejected" : "approved",
@@ -34,13 +38,22 @@ function mapMemberRow(row: Record<string, unknown>): MemberListItem {
 
 export async function listMembersInScope(
   _user: PortalSessionUser,
-  options: { status?: string; limit?: number } = {},
+  options: {
+    status?: string;
+    limit?: number;
+    search?: string;
+    branchId?: string;
+    dojoId?: string;
+  } = {},
 ) {
   const token = await getInkaiTokenFromCookies();
   if (!token) return { ok: false as const, error: "Belum login." };
 
   const qs = new URLSearchParams();
   if (options.status) qs.set("status", options.status);
+  if (options.search) qs.set("search", options.search);
+  if (options.branchId) qs.set("branchId", options.branchId);
+  if (options.dojoId) qs.set("dojoId", options.dojoId);
   qs.set("limit", String(options.limit ?? 100));
 
   const { res, data } = await inkaiFetch(`/v1/members?${qs}`, {}, token);

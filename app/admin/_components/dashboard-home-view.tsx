@@ -12,7 +12,19 @@ import {
   ArrowRight,
   ShieldCheck,
   Clock3,
+  Megaphone,
+  CalendarDays,
+  AlertCircle,
 } from "lucide-react";
+
+const EXEC_LINKS = [
+  { href: "/admin/cabang", label: "Daftar Cabang", icon: MapPin },
+  { href: "/admin/organisasi", label: "Semua Dojo", icon: Building2 },
+  { href: "/admin/anggota", label: "Data Anggota", icon: Users },
+  { href: "/admin/verifikasi", label: "Persetujuan", icon: ShieldCheck },
+  { href: "/admin/broadcast", label: "Broadcast Provinsi", icon: Megaphone },
+  { href: "/admin/kegiatan", label: "Kegiatan", icon: CalendarDays },
+];
 
 export function DashboardHomeView() {
   const context = useDashboardData();
@@ -30,33 +42,59 @@ export function DashboardHomeView() {
     <div className="mx-auto max-w-7xl space-y-6">
       <section>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          Dashboard Anggota
+          Admin Pengprov Jawa Timur
         </p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">
           Ringkasan Wilayah{" "}
           <span className="text-gradient-accent">{context.roleLabel}</span>
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Kelola dan pantau data organisasi INKAI sesuai cakupan hierarki Provinsi →
-          Cabang → Dojo/Ranting.
+          Pantau kesehatan organisasi INKAI se-Jawa Timur: cabang, dojo, anggota, dan antrian
+          verifikasi — selaras Inkai API (inkai-backend).
         </p>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Provinsi" value={context.stats.provinces} icon={Landmark} />
         <StatCard title="Cabang" value={context.stats.branches} icon={MapPin} />
         <StatCard title="Dojo/Ranting" value={context.stats.dojos} icon={Building2} />
         <StatCard title="Anggota" value={context.stats.members} icon={Users} />
+        <StatCard
+          title="Pending Verifikasi"
+          value={context.stats.pendingVerifications}
+          icon={AlertCircle}
+        />
       </section>
 
       <HierarchyBanner hierarchy={context.hierarchy} />
+
+      <section className="glass-card p-5">
+        <h2 className="mb-4 text-base font-semibold">Menu Eksekutif</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {EXEC_LINKS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-background/50 px-4 py-3 transition-colors hover:border-accent/30 hover:bg-accent/5"
+              >
+                <span className="inline-flex rounded-xl bg-accent/10 p-2 text-accent">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="text-sm font-semibold">{item.label}</span>
+                <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
         <div className="glass-card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold">Dojo/Ranting dalam Cakupan</h2>
             <Link
-              href="/dashboard/organisasi"
+              href="/admin/organisasi"
               className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
             >
               Lihat semua
@@ -78,7 +116,9 @@ export function DashboardHomeView() {
                   <div>
                     <p className="text-sm font-semibold">{dojo.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {dojo.address ?? "Alamat belum diisi"}
+                      {[dojo.branchName, dojo.address ?? "Alamat belum diisi"]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
                   <Building2 className="h-4 w-4 text-accent/70" />
@@ -98,6 +138,32 @@ export function DashboardHomeView() {
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               Role: <strong className="text-foreground">{context.roleLabel}</strong>
             </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Provinsi cakupan: <strong className="text-foreground">JAWA TIMUR</strong>
+            </p>
+          </div>
+
+          <div className="glass-card p-5">
+            <div className="mb-3 inline-flex rounded-xl bg-muted p-2 text-muted-foreground">
+              <Landmark className="h-4 w-4" />
+            </div>
+            <h3 className="text-sm font-semibold">KPI Cabang Teratas</h3>
+            <div className="mt-3 space-y-2">
+              {context.branches.slice(0, 4).map((branch) => (
+                <div key={branch.id} className="flex items-center justify-between text-xs">
+                  <span className="truncate font-medium">{branch.name}</span>
+                  <span className="text-muted-foreground">
+                    {branch.dojoCount} dojo · {branch.memberCount} anggota
+                  </span>
+                </div>
+              ))}
+              {context.branches.length === 0 && (
+                <p className="text-xs text-muted-foreground">Belum ada data cabang.</p>
+              )}
+              <Link href="/admin/cabang" className="btn-outline mt-2 w-full text-xs">
+                Lihat semua cabang
+              </Link>
+            </div>
           </div>
 
           <div className="glass-card p-5">
@@ -106,14 +172,14 @@ export function DashboardHomeView() {
             </div>
             <h3 className="text-sm font-semibold">Aksi Cepat</h3>
             <div className="mt-3 space-y-2">
-              <Link href="/dashboard/anggota" className="btn-outline w-full text-xs">
+              <Link href="/admin/verifikasi" className="btn-outline w-full text-xs">
+                Antrian Verifikasi ({context.stats.pendingVerifications})
+              </Link>
+              <Link href="/admin/anggota" className="btn-ghost w-full text-xs">
                 Kelola Anggota
               </Link>
-              <Link href="/dashboard/profil" className="btn-ghost w-full text-xs">
-                Profil Akun
-              </Link>
-              <Link href="/" className="btn-ghost w-full text-xs">
-                Portal Publik
+              <Link href="/admin/broadcast" className="btn-ghost w-full text-xs">
+                Broadcast Provinsi
               </Link>
             </div>
           </div>

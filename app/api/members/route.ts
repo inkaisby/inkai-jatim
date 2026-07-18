@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireMemberVerifier } from "@/lib/auth/guard";
 import { inkaiFetch, inkaiErrorMessage } from "@/lib/inkai-api/server";
 import { getInkaiTokenFromCookies } from "@/lib/inkai-api/cookies";
 
@@ -9,14 +8,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const status = new URL(request.url).searchParams.get("status") ?? undefined;
+  const url = new URL(request.url);
   const qs = new URLSearchParams();
-  if (status) qs.set("status", status);
-  qs.set("limit", "100");
+  for (const key of ["status", "search", "branchId", "dojoId", "currentRank", "page", "limit"]) {
+    const value = url.searchParams.get(key);
+    if (value) qs.set(key, value);
+  }
+  if (!qs.has("limit")) qs.set("limit", "100");
 
   const { res, data } = await inkaiFetch(`/v1/members?${qs}`, {}, token);
   if (!res.ok) {
-    return NextResponse.json({ error: inkaiErrorMessage(data, "Gagal memuat anggota") }, { status: res.status });
+    return NextResponse.json(
+      { error: inkaiErrorMessage(data, "Gagal memuat anggota") },
+      { status: res.status },
+    );
   }
 
   const rows = (data.data as Array<Record<string, unknown>>) ?? [];
@@ -25,6 +30,8 @@ export async function GET(request: Request) {
     userId: row.userId,
     fullName: row.fullName,
     email: (row.user as { email?: string } | undefined)?.email ?? null,
+    nia: row.nia ?? null,
+    currentRank: row.currentRank ?? null,
     status: row.status,
     profileStatus:
       row.status === "PENDING"
@@ -38,5 +45,5 @@ export async function GET(request: Request) {
     createdAt: row.createdAt,
   }));
 
-  return NextResponse.json({ data: items });
+  return NextResponse.json({ data: items, meta: data.meta ?? null });
 }

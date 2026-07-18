@@ -5,6 +5,6 @@ export const metadata: Metadata = {
   title: "Ringkasan",
 };
 
-export default function DashboardPage() {
+export default function AdminPage() {
   return <DashboardHomeView />;
 }

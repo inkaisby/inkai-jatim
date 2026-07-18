@@ -1,4 +1,4 @@
-export default function DashboardAnggotaLoading() {
+export default function AdminAnggotaLoading() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 animate-pulse">
       <section className="space-y-2">

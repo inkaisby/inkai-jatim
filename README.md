@@ -1,6 +1,8 @@
 # INKAI Jatim Portal
 
-Portal resmi INKAI Jawa Timur dengan autentikasi terintegrasi ke database operasional (`User`, `Member`, RBAC).
+Portal resmi **Pengprov INKAI Jawa Timur** dengan autentikasi terintegrasi ke Inkai API + database operasional (`User`, `Member`, RBAC).
+
+> **Agent / pengurus:** baca dulu [`LAPORAN-INVENTARIS-SISTEM.md`](./LAPORAN-INVENTARIS-SISTEM.md) sebelum mengubah fitur, alur, atau RBAC. Lihat juga [`AGENTS.md`](./AGENTS.md).
 
 ## Setup lokal
 
@@ -15,11 +17,12 @@ npm run dev
 
 | Variable | Keterangan |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://mzmdhkwleufeiyaspmns.supabase.co` |
+| `INKAI_API_URL` / `NEXT_PUBLIC_INKAI_API_URL` | Backend Inkai (`inkai-ecosystem`) |
+| `NEXT_PUBLIC_APP_URL` | `https://inkai-jatim.vercel.app` |
+| `NEXT_PUBLIC_SUPABASE_URL` | (jika dipakai) URL project Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Key `sb_publishable_...` dari Supabase |
 | `SUPABASE_SECRET_KEY` | Key `sb_secret_...` (server only) |
 | `PORTAL_SESSION_SECRET` | Random string min 32 karakter |
-| `NEXT_PUBLIC_APP_URL` | `https://inkai-jatim.vercel.app` |
 | `DIRECT_URL` | PostgreSQL session pooler (port 5432) + password DB |
 
 Legacy alias yang juga didukung: `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
@@ -48,10 +51,10 @@ npm run db:seed-permissions
 
 ## Fitur utama
 
-- Portal publik: berita, agenda, dojo, dokumen
+- Portal publik: berita, agenda, dojo, profil
 - Login/register anggota (Provinsi → Cabang → Dojo)
-- Dashboard RBAC scoped per wilayah
-- Verifikasi anggota pending (admin cabang/dojo)
+- Admin RBAC scoped per wilayah Jawa Timur (`/admin`; legacy `/dashboard` → redirect)
+- Verifikasi anggota pending (admin sesuai cakupan)
 - Forgot/reset password
 - Health check: `/api/health`
 

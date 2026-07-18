@@ -195,7 +195,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         setTimeout(() => {
           onClose();
-          window.location.href = "/dashboard";
+          window.location.href = "/admin";
         }, 1200);
       } else {
         if (

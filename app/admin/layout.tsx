@@ -6,13 +6,13 @@ import { DashboardShell } from "./_components/dashboard-shell";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s — Dashboard INKAI Jatim",
-    default: "Dashboard — INKAI Jatim",
+    template: "%s — Admin INKAI Jatim",
+    default: "Admin — INKAI Jatim",
   },
   robots: { index: false, follow: false },
 };
 
-export default async function DashboardLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;

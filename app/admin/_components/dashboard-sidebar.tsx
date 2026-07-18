@@ -11,15 +11,55 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  MapPin,
+  ShieldCheck,
+  Megaphone,
+  CalendarDays,
 } from "lucide-react";
 import type { PortalSessionUser } from "@/lib/auth/types";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/organisasi", label: "Organisasi", icon: Network },
-  { href: "/dashboard/anggota", label: "Anggota", icon: Users },
-  { href: "/dashboard/profil", label: "Profil Akun", icon: UserCircle },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+};
+
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Ringkasan",
+    items: [{ href: "/admin", label: "Beranda", icon: LayoutDashboard }],
+  },
+  {
+    label: "Organisasi",
+    items: [
+      { href: "/admin/cabang", label: "Cabang", icon: MapPin },
+      { href: "/admin/organisasi", label: "Dojo / Ranting", icon: Network },
+      { href: "/admin/anggota", label: "Anggota", icon: Users },
+    ],
+  },
+  {
+    label: "Operasional",
+    items: [
+      { href: "/admin/verifikasi", label: "Verifikasi", icon: ShieldCheck },
+      { href: "/admin/kegiatan", label: "Kegiatan", icon: CalendarDays },
+      { href: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
+    ],
+  },
+  {
+    label: "Akun",
+    items: [{ href: "/admin/profil", label: "Profil Akun", icon: UserCircle }],
+  },
 ];
+
+function isActivePath(pathname: string, href: string) {
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function DashboardSidebar({
   user,
@@ -51,35 +91,45 @@ export function DashboardSidebar({
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-bold">
-              <span className="text-accent">INKAI</span> Dashboard
+              <span className="text-accent">INKAI</span> Admin
             </p>
             <p className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">
-              Jawa Timur
+              Pengprov Jawa Timur
             </p>
           </div>
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={`dashboard-nav-item group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                active
-                  ? "bg-accent text-accent-foreground shadow-md shadow-accent/20"
-                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-4.5 w-4.5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => {
+              const active = isActivePath(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  title={collapsed ? item.label : undefined}
+                  className={`dashboard-nav-item group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                    active
+                      ? "bg-accent text-accent-foreground shadow-md shadow-accent/20"
+                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-4.5 w-4.5 shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="space-y-2 border-t border-border/60 p-3">

@@ -11,7 +11,21 @@ export type HierarchyNode = {
   name: string;
 };
 
-export type DojoSummary = { id: string; name: string; address: string | null };
+export type DojoSummary = {
+  id: string;
+  name: string;
+  address: string | null;
+  branchId?: string | null;
+  branchName?: string | null;
+  memberCount?: number;
+};
+
+export type BranchSummary = {
+  id: string;
+  name: string;
+  dojoCount: number;
+  memberCount: number;
+};
 
 export type DashboardContext = {
   roleLabel: string;
@@ -22,18 +36,19 @@ export type DashboardContext = {
     branches: number;
     dojos: number;
     members: number;
+    pendingVerifications: number;
+    iuranTotal: number;
   };
   profileStatus: string | null;
   memberStatus: string | null;
   recentDojos: DojoSummary[];
   allDojos: DojoSummary[];
+  branches: BranchSummary[];
 };
 
 const RECENT_DOJO_LIMIT = 6;
 
-function toDojoSummaries(
-  dojos: DojoSummary[] | null | undefined,
-): DojoSummary[] {
+function toDojoSummaries(dojos: DojoSummary[] | null | undefined): DojoSummary[] {
   return dojos ?? [];
 }
 
@@ -44,11 +59,19 @@ function splitDojoLists(all: DojoSummary[]) {
   };
 }
 
-function mapDojoRow(row: Record<string, unknown>): DojoSummary {
+function mapDojoRow(
+  row: Record<string, unknown>,
+  branch?: { id?: string; name?: string } | null,
+): DojoSummary {
+  const nestedBranch = row.branch as { id?: string; name?: string } | undefined;
+  const count = row._count as { members?: number } | undefined;
   return {
     id: String(row.id),
     name: String(row.name ?? ""),
     address: (row.address as string | null) ?? null,
+    branchId: nestedBranch?.id ?? branch?.id ?? null,
+    branchName: nestedBranch?.name ?? branch?.name ?? null,
+    memberCount: count?.members ?? 0,
   };
 }
 
@@ -62,9 +85,17 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
     { level: "provinsi", id: user.scope.provinceId, name: JATIM_PROVINCE_NAME },
   ];
 
-  let stats = { provinces: 0, branches: 0, dojos: 0, members: 0 };
+  let stats = {
+    provinces: 0,
+    branches: 0,
+    dojos: 0,
+    members: 0,
+    pendingVerifications: 0,
+    iuranTotal: 0,
+  };
   let recentDojos: DojoSummary[] = [];
   let allDojos: DojoSummary[] = [];
+  let branches: BranchSummary[] = [];
   let memberStatus: string | null = null;
   let profileStatus = user.profileStatus;
 
@@ -78,6 +109,7 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
       memberStatus,
       recentDojos,
       allDojos,
+      branches,
     };
   }
 
@@ -107,6 +139,8 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
       branches: Number(s.totalBranches ?? 0),
       dojos: Number(s.totalDojos ?? 0),
       members: Number(s.totalMembers ?? 0),
+      pendingVerifications: Number(s.pendingVerifications ?? 0),
+      iuranTotal: Number(s.iuranTotal ?? 0),
     };
   }
 
@@ -134,9 +168,17 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
       const branch = dojo.branch as { id?: string; name?: string } | undefined;
       if (branch?.name) {
         hierarchy.push({ level: "cabang", id: branch.id ?? null, name: branch.name });
+        branches = [
+          {
+            id: String(branch.id),
+            name: String(branch.name),
+            dojoCount: 1,
+            memberCount: Number((dojo._count as { members?: number } | undefined)?.members ?? 0),
+          },
+        ];
       }
       hierarchy.push({ level: "dojo", id: scopeDojoId, name: String(dojo.name ?? "") });
-      const single = [mapDojoRow(dojo)];
+      const single = [mapDojoRow(dojo, branch)];
       allDojos = single;
       recentDojos = single;
     }
@@ -144,38 +186,65 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
     const { res, data } = await inkaiFetch(`/v1/org/dojos/${scopeBranchId}`, {}, token);
     if (res.ok) {
       const branchRes = await inkaiFetch(`/v1/org/branches/all`, {}, token);
-      const branches = branchRes.res.ok
+      const branchRows = branchRes.res.ok
         ? ((branchRes.data.data as Array<Record<string, unknown>>) ?? [])
         : [];
-      const branch = branches.find((b) => b.id === scopeBranchId);
+      const branch = branchRows.find((b) => b.id === scopeBranchId);
       if (branch) {
         hierarchy.push({
           level: "cabang",
           id: String(branch.id),
           name: String(branch.name),
         });
+        const dojos = ((data.data as Array<Record<string, unknown>>) ?? []).map((d) =>
+          mapDojoRow(d, { id: String(branch.id), name: String(branch.name) }),
+        );
+        branches = [
+          {
+            id: String(branch.id),
+            name: String(branch.name),
+            dojoCount: dojos.length,
+            memberCount: dojos.reduce((sum, d) => sum + (d.memberCount ?? 0), 0),
+          },
+        ];
+        ({ allDojos, recentDojos } = splitDojoLists(dojos));
       }
-      const listed = toDojoSummaries(
-        ((data.data as Array<Record<string, unknown>>) ?? []).map(mapDojoRow),
-      );
-      ({ allDojos, recentDojos } = splitDojoLists(listed));
     }
   } else if (jatimProvince) {
-    const branches = (jatimProvince.branches as Array<Record<string, unknown>>) ?? [];
-    if (branches[0]) {
+    const provinceBranches = (jatimProvince.branches as Array<Record<string, unknown>>) ?? [];
+    if (provinceBranches[0]) {
       hierarchy.push({
         level: "cabang",
-        id: String(branches[0].id),
-        name: String(branches[0].name),
+        id: String(provinceBranches[0].id),
+        name: String(provinceBranches[0].name),
       });
     }
+
     const allBranchDojos: DojoSummary[] = [];
-    for (const branch of branches) {
+    branches = provinceBranches.map((branch) => {
       const dojos = (branch.dojos as Array<Record<string, unknown>>) ?? [];
-      allBranchDojos.push(...dojos.map(mapDojoRow));
-    }
+      const mapped = dojos.map((d) =>
+        mapDojoRow(d, { id: String(branch.id), name: String(branch.name) }),
+      );
+      allBranchDojos.push(...mapped);
+      const countMeta = branch._count as { dojos?: number } | undefined;
+      return {
+        id: String(branch.id),
+        name: String(branch.name),
+        dojoCount: countMeta?.dojos ?? mapped.length,
+        memberCount: mapped.reduce((sum, d) => sum + (d.memberCount ?? 0), 0),
+      };
+    });
+
     allBranchDojos.sort((a, b) => a.name.localeCompare(b.name));
     ({ allDojos, recentDojos } = splitDojoLists(allBranchDojos));
+
+    if (stats.branches === 0 && branches.length > 0) {
+      stats.branches = branches.length;
+    }
+    if (stats.dojos === 0 && allDojos.length > 0) {
+      stats.dojos = allDojos.length;
+    }
   }
 
   return {
@@ -187,5 +256,6 @@ export const getDashboardContext = cache(async (user: PortalSessionUser): Promis
     memberStatus,
     recentDojos,
     allDojos,
+    branches,
   };
 });

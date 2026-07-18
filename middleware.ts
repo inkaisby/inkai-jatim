@@ -3,7 +3,17 @@ import type { NextRequest } from "next/server";
 import { INKAI_TOKEN_COOKIE } from "@/lib/inkai-api/cookies";
 
 export async function middleware(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith("/dashboard")) {
+  const { pathname } = request.nextUrl;
+
+  // Compatibility: old /dashboard URLs → /admin
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+    const target = pathname.replace(/^\/dashboard/, "/admin");
+    const url = request.nextUrl.clone();
+    url.pathname = target;
+    return NextResponse.redirect(url, 308);
+  }
+
+  if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
 
@@ -18,5 +28,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/admin/:path*", "/dashboard/:path*"],
 };

@@ -1,0 +1,33 @@
+---
+description: Baca & update LAPORAN-INVENTARIS-SISTEM.md sebagai living context sistem
+alwaysApply: true
+---
+
+# Laporan Inventaris Sistem (living context)
+
+`LAPORAN-INVENTARIS-SISTEM.md` di root repo adalah **sumber kebenaran** untuk modul, alur bisnis, RBAC, API, dan status kelengkapan `inkai-jatim` (Pengprov Jawa Timur). Nama file ini **tetap** — jangan rename atau buat dokumen inventaris paralel.
+
+## Sebelum develop / refactor / debug fitur
+
+1. **Baca** bagian relevan di inventaris dulu (publik, `/admin`, hierarki RBAC, §8 alur, §11 celah, §10 API).
+2. Selaraskan rencana dengan status & alur yang terdokumentasi; jangan mengasumsi dari training data atau dari `inkai-sby` saja.
+3. Ingat posisi organisasi: **Provinsi**, bukan Cabang — hak tulis operasional cabang (iuran/UKT/absensi) bukan default.
+4. Jika inventaris dan kode bertentangan, **percayai kode** lalu perbaiki inventaris di turn yang sama.
+
+## Setelah mengubah fitur / alur / RBAC / API
+
+Perbarui inventaris **pada turn yang sama** dengan perubahan kode:
+
+- Tabel modul publik / admin jika status atau fungsi berubah
+- Alur bisnis (§8) jika workflow berubah
+- Hierarki / peran / permission jika hak akses berubah
+- Status kelengkapan & celah (§11) dan prioritas kesimpulan (§14)
+- Peta API (§10) jika endpoint baru/berubah
+- **Riwayat penyusunan (§15)** — tambah baris tanggal + ringkasan singkat
+
+## Jangan
+
+- Jangan membuat dokumen inventaris baru; edit file yang sudah ada
+- Jangan menunda update “nanti”; lakukan bersamaan dengan perubahan kode
+- Jangan rename `LAPORAN-INVENTARIS-SISTEM.md`
+- Jangan mengasumsikan URL `/dashboard` masih kanonik — kanonik = `/admin`
