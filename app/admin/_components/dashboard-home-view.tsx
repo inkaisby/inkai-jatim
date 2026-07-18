@@ -18,12 +18,14 @@ import {
 } from "lucide-react";
 
 const EXEC_LINKS = [
-  { href: "/admin/cabang", label: "Daftar Cabang", icon: MapPin },
-  { href: "/admin/organisasi", label: "Semua Dojo", icon: Building2 },
-  { href: "/admin/anggota", label: "Data Anggota", icon: Users },
-  { href: "/admin/verifikasi", label: "Persetujuan", icon: ShieldCheck },
-  { href: "/admin/broadcast", label: "Broadcast Provinsi", icon: Megaphone },
-  { href: "/admin/kegiatan", label: "Kegiatan", icon: CalendarDays },
+  { href: "/admin/anggota", label: "Kelola Anggota", icon: Users },
+  { href: "/admin/verifikasi", label: "Verifikasi", icon: ShieldCheck },
+  { href: "/admin/organisasi", label: "Organisasi", icon: Building2 },
+  { href: "/admin/iuran", label: "Iuran Anggota", icon: MapPin },
+  { href: "/admin/ukt", label: "UKT", icon: Landmark },
+  { href: "/admin/kegiatan", label: "Event & Kegiatan", icon: CalendarDays },
+  { href: "/admin/pesan", label: "Pesan / Broadcast", icon: Megaphone },
+  { href: "/admin/pengaturan", label: "Pengaturan", icon: Clock3 },
 ];
 
 export function DashboardHomeView() {
@@ -160,7 +162,7 @@ export function DashboardHomeView() {
               {context.branches.length === 0 && (
                 <p className="text-xs text-muted-foreground">Belum ada data cabang.</p>
               )}
-              <Link href="/admin/cabang" className="btn-outline mt-2 w-full text-xs">
+              <Link href="/admin/pengaturan/cabang" className="btn-outline mt-2 w-full text-xs">
                 Lihat semua cabang
               </Link>
             </div>
@@ -178,8 +180,8 @@ export function DashboardHomeView() {
               <Link href="/admin/anggota" className="btn-ghost w-full text-xs">
                 Kelola Anggota
               </Link>
-              <Link href="/admin/broadcast" className="btn-ghost w-full text-xs">
-                Broadcast Provinsi
+              <Link href="/admin/pengaturan" className="btn-ghost w-full text-xs">
+                Pengaturan
               </Link>
             </div>
           </div>

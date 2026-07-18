@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import { CabangView } from "../_components/cabang-view";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Cabang",
-};
-
-export default function AdminCabangPage() {
-  return <CabangView />;
+/** Alias: di inkai-sby cabang ada di Pengaturan Cabang. */
+export default function AdminCabangRedirectPage() {
+  redirect("/admin/pengaturan/cabang");
 }

@@ -2,63 +2,76 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  Network,
-  UserCircle,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  MapPin,
-  ShieldCheck,
-  Megaphone,
-  CalendarDays,
+  ChevronDown,
 } from "lucide-react";
 import type { PortalSessionUser } from "@/lib/auth/types";
+import {
+  getAdminNavLinks,
+  isNavGroup,
+  isActivePath,
+  type NavItem,
+} from "@/lib/admin-nav";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-};
+function NavGroupBlock({
+  item,
+  pathname,
+  collapsed,
+  onNavigate,
+}: {
+  item: Extract<NavItem, { children: unknown }>;
+  pathname: string;
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
+  const childActive = item.children.some((c) => isActivePath(pathname, c.href));
+  const [open, setOpen] = useState(childActive);
 
-type NavGroup = {
-  label: string;
-  items: NavItem[];
-};
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Ringkasan",
-    items: [{ href: "/admin", label: "Beranda", icon: LayoutDashboard }],
-  },
-  {
-    label: "Organisasi",
-    items: [
-      { href: "/admin/cabang", label: "Cabang", icon: MapPin },
-      { href: "/admin/organisasi", label: "Dojo / Ranting", icon: Network },
-      { href: "/admin/anggota", label: "Anggota", icon: Users },
-    ],
-  },
-  {
-    label: "Operasional",
-    items: [
-      { href: "/admin/verifikasi", label: "Verifikasi", icon: ShieldCheck },
-      { href: "/admin/kegiatan", label: "Kegiatan", icon: CalendarDays },
-      { href: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
-    ],
-  },
-  {
-    label: "Akun",
-    items: [{ href: "/admin/profil", label: "Profil Akun", icon: UserCircle }],
-  },
-];
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/admin") return pathname === "/admin";
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return (
+    <div className="space-y-1">
+      {!collapsed && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/90 hover:bg-muted/50"
+        >
+          <span>{item.label}</span>
+          <ChevronDown
+            className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
+      {(collapsed || open) &&
+        item.children.map((child) => {
+          const active = isActivePath(pathname, child.href);
+          return (
+            <Link
+              key={child.href}
+              href={child.href}
+              onClick={onNavigate}
+              title={collapsed ? child.label : undefined}
+              className={`dashboard-nav-item flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-accent text-accent-foreground shadow-md shadow-accent/20"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+              }`}
+            >
+              {!collapsed && <span className="truncate">{child.label}</span>}
+              {collapsed && (
+                <span className="mx-auto text-[10px] font-bold">
+                  {child.label.slice(0, 2).toUpperCase()}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+    </div>
+  );
 }
 
 export function DashboardSidebar({
@@ -73,6 +86,7 @@ export function DashboardSidebar({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const items = useMemo(() => getAdminNavLinks(user.roles), [user.roles]);
 
   return (
     <aside
@@ -100,36 +114,41 @@ export function DashboardSidebar({
         )}
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} className="space-y-1">
-            {!collapsed && (
-              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
-                {group.label}
-              </p>
-            )}
-            {group.items.map((item) => {
-              const active = isActivePath(pathname, item.href);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  title={collapsed ? item.label : undefined}
-                  className={`dashboard-nav-item group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    active
-                      ? "bg-accent text-accent-foreground shadow-md shadow-accent/20"
-                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-4.5 w-4.5 shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+      <nav className="flex-1 space-y-3 overflow-y-auto p-3">
+        {items.map((item) => {
+          if (isNavGroup(item)) {
+            return (
+              <NavGroupBlock
+                key={item.label}
+                item={item}
+                pathname={pathname}
+                collapsed={collapsed}
+                onNavigate={onNavigate}
+              />
+            );
+          }
+
+          const active = isActivePath(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              title={collapsed ? item.label : undefined}
+              className={`dashboard-nav-item flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-accent text-accent-foreground shadow-md shadow-accent/20"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+              }`}
+            >
+              {!collapsed ? (
+                <span>{item.label}</span>
+              ) : (
+                <span className="mx-auto text-[10px] font-bold">BA</span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="space-y-2 border-t border-border/60 p-3">
@@ -145,7 +164,7 @@ export function DashboardSidebar({
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="hidden lg:flex w-full items-center justify-center gap-2 rounded-xl border border-border/70 px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground"
+          className="hidden w-full items-center justify-center gap-2 rounded-xl border border-border/70 px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground lg:flex"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           {!collapsed && <span>Ciutkan Sidebar</span>}

@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import { ProfilView } from "../_components/profil-view";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Profil Akun",
-};
-
-export default function AdminProfilPage() {
-  return <ProfilView />;
+export default function AdminProfilRedirectPage() {
+  redirect("/admin/pengaturan/akun");
 }

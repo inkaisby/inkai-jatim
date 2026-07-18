@@ -84,46 +84,49 @@ Sistem **inkai-jatim** adalah portal resmi **Pengurus Provinsi Jawa Timur** yang
 
 | Modul | Route | Status | Fungsi |
 |-------|-------|--------|--------|
-| Beranda | `/admin` | Aktif | KPI cabang/dojo/anggota/**pending verifikasi**; menu eksekutif; hierarki; KPI cabang teratas |
-| Cabang | `/admin/cabang` | Aktif | Direktori Pengcab + dojo/anggota count; deep-link ke dojo & anggota |
-| Dojo / Ranting | `/admin/organisasi` | Aktif | Daftar dojo + filter cabang + cari + jumlah anggota |
-| Anggota | `/admin/anggota` | Aktif | Cari nama/NIA, filter cabang/status, approve/reject, **export CSV** |
-| Verifikasi | `/admin/verifikasi` | Aktif | Antrian klaim (`/v1/verifications/pending`) + proses approve/reject |
-| Kegiatan | `/admin/kegiatan` | Aktif | Oversight daftar event (`/v1/events`) |
-| Broadcast | `/admin/broadcast` | Aktif | Pengumuman Provinsi (`/v1/notifications/broadcast`) |
-| Profil Akun | `/admin/profil` | Aktif | Data akun, role, hierarki |
+| Beranda Admin | `/admin` | Aktif | KPI + menu eksekutif (selaras sby) |
+| Kelola Anggota | `/admin/anggota` | Aktif | Cari/filter/export/verifikasi registrasi |
+| Verifikasi | `/admin/verifikasi` | Aktif | Antrian klaim Inkai API |
+| Organisasi | `/admin/organisasi` | Aktif | Dojo/ranting + filter cabang |
+| Iuran Anggota | `/admin/iuran` | Aktif | Daftar + verifikasi pembayaran |
+| UKT | `/admin/ukt` | Aktif | Oversight event UKT |
+| Event & Kegiatan | `/admin/kegiatan` | Aktif | Daftar event |
+| Absensi | `/admin/absensi` | Aktif | Log kehadiran scoped |
+| Materi Digital | `/admin/materi` | Placeholder | Menu siap; upload menunggu endpoint |
+| Store | `/admin/store` | Aktif | Katalog `/v1/inventory` |
+| Pesan | `/admin/pesan` | Aktif | Inbox chat + tab broadcast |
+| Carousel Beranda | `/admin/carousel` | Aktif | CRUD slide beranda |
+| Notifikasi | `/admin/notifikasi` | Aktif | Inbox notifikasi admin |
+| Log Audit | `/admin/audit` | Aktif | Log + export CSV |
+| Pengaturan | `/admin/pengaturan/*` | Aktif | Hub + user/cabang/ranting/kebijakan/peran/geofencing/akun |
 
-**Brand UI:** sidebar **INKAI Admin · Pengprov Jawa Timur**; nav dikelompokkan (Ringkasan / Organisasi / Operasional / Akun).
+**Sidebar:** struktur grup **identik inkai-sby** (`lib/admin-nav.ts`): Keanggotaan / Keuangan & UKT / Kegiatan & Absensi / Konten & Layanan / Sistem. Filter `ADMIN_DOJO` sama pola sby.
 
-**Shell teknis:** komponen masih berprefiks `dashboard-*` di `app/admin/_components/` dan helper di `lib/dashboard/` — nama internal, bukan URL.
+**Alias:** `/admin/profil` → `/admin/pengaturan/akun`; `/admin/cabang` → `/admin/pengaturan/cabang`.
 
 ### 5.1 API proxy admin (lokal → backend)
 
 ```
-/api/members                     → GET /v1/members (search, branchId, status)
+/api/members                     → GET /v1/members
 /api/members/[id]/verify        → PATCH /v1/members/:id/registration
-/api/admin/verifications         → GET /v1/verifications/pending
-/api/admin/verifications/[id]    → POST /v1/verifications/:id/process
-/api/admin/events                → GET /v1/events
-/api/admin/broadcast             → POST /v1/notifications/broadcast
-/api/org/branches                → cabang Jatim
-/api/org/dojos                   → dojo per cabang
+/api/admin/verifications*        → /v1/verifications*
+/api/admin/events                → /v1/events
+/api/admin/billing*              → /v1/billing*
+/api/admin/attendance            → /v1/attendance
+/api/admin/store*                → /v1/inventory*
+/api/admin/carousel*             → /v1/news-carousel*
+/api/admin/audit                 → /v1/audit-logs
+/api/admin/notifications         → /v1/notifications/my
+/api/admin/pesan                 → /v1/chat/conversations
+/api/admin/broadcast             → /v1/notifications/broadcast
 ```
 
-### 5.2 Yang sengaja belum ada di admin Jatim
+### 5.2 Perbedaan vs inkai-sby (sengaja / sementara)
 
-Modul operasional **hari-ke-hari Cabang** (produk `inkai-sby` / cabang-ops, bukan clone otomatis ke Pengprov):
-
-- Iuran generate/lunas, UKT tulis, absensi GPS admin, materi, store, pesan 1:1, carousel, audit UI, pengaturan multi-akun, geofencing
-- Portal anggota self-service penuh
-- Verifikasi kartu publik `/v/[id]`
-
-**Masih kurang (fase lanjut Pengprov):**
-
-1. Kelola / audit akun `ADMIN_BRANCH` di bawah Pengprov
-2. CRUD **Pengurus Provinsi** dari admin (publik masih statis)
-3. Oversight iuran/UKT lintas cabang (read-only / deep-link)
-4. Domain `inkai-admin.vercel.app` belum ter-deploy di Vercel team (404) — CORS backend sudah disiapkan
+- Scope data: **Provinsi Jawa Timur**, bukan Cabang Surabaya
+- Materi digital: menu ada, upload penuh menunggu endpoint materi khusus
+- Kedalaman UKT/iuran/absensi: oversight via API (belum seluruh alur nota/gate sby)
+- Pengaturan user multi-akun: fondasi UI; CRUD penuh menyusul API wilayah-accounts
 
 ---
 
@@ -319,6 +322,7 @@ Prioritas pengembangan lanjutan:
 |---------|------------|
 | 18 Juli 2026 | Inventaris awal `inkai-jatim`: posisi Pengprov, publik, admin `/admin` (ex-`/dashboard`), RBAC, API, celah vs `inkai-sby`, rule agent |
 | 18 Juli 2026 | Paket komplit Pengprov: Cabang, Dojo filter, Anggota search/export, Verifikasi klaim, Kegiatan, Broadcast; proxy API ke inkai-backend; patch backend stats scope + filter `branchId` + CORS `inkai-admin` |
+| 18 Juli 2026 | Samakan sidebar & modul admin dengan `inkai-sby` (Keanggotaan/Keuangan/Kegiatan/Konten/Sistem + pengaturan hub); halaman iuran/ukt/absensi/store/pesan/carousel/notifikasi/audit |
 
 ---
 

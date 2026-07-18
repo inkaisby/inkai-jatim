@@ -10,7 +10,7 @@ const TARGET_ROLES = [
   { id: "MEMBER", label: "Anggota" },
 ];
 
-export function BroadcastView() {
+export function BroadcastView({ embedded = false }: { embedded?: boolean }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [targetRole, setTargetRole] = useState("");
@@ -55,17 +55,19 @@ export function BroadcastView() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <section>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-          Komunikasi Provinsi
-        </p>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">Broadcast</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Kirim pengumuman Pengprov ke cabang, dojo, atau anggota se-Jawa Timur melalui Inkai API
-          (`/v1/notifications/broadcast`).
-        </p>
-      </section>
+    <div className={embedded ? "space-y-4" : "mx-auto max-w-3xl space-y-6"}>
+      {!embedded && (
+        <section>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            Komunikasi Provinsi
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">Broadcast</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Kirim pengumuman Pengprov ke cabang, dojo, atau anggota se-Jawa Timur melalui Inkai API
+            (`/v1/notifications/broadcast`).
+          </p>
+        </section>
+      )}
 
       <form onSubmit={handleSubmit} className="glass-card space-y-4 p-5">
         <div className="inline-flex rounded-xl bg-accent/10 p-2 text-accent">
